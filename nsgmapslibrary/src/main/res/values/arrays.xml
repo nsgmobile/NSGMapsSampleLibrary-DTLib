@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string-array name="Spinner_Ch_Number">
+        <item>--SELECT--</item>
+        <item>1HGBH41JXMN109185</item>
+        <item>1HGBH41JXMN109186</item>
+        <item>1HGBH41JXMN109187</item>
+    </string-array>
+
+</resources>

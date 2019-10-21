@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <fragment
+            android:name="com.google.android.gms.maps.SupportMapFragment"
+            android:id="@+id/frg"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_centerInParent="true"/>
+        <RelativeLayout
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom">
+
+                <TextView
+                    android:id="@+id/tv"
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@color/colorPrimary"
+                    android:textSize="15dp"
+                    android:textColor="#FFFFFF"
+                    android:layout_gravity="bottom"
+                    android:padding="10dp" />
+
+                <TextView
+                    android:id="@+id/tv1"
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/tv"
+                    android:textSize="15dp"
+                    android:background="@color/colorPrimary"
+                    android:textColor="#FFFFFF"
+                    android:layout_gravity="bottom"
+                    android:padding="10dp" />
+                <TextView
+                    android:id="@+id/tv2"
+                    android:layout_width="fill_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_below="@+id/tv1"
+                    android:textSize="15dp"
+                    android:background="@color/colorPrimary"
+                    android:textColor="#FFFFFF"
+                    android:layout_gravity="bottom"
+                    android:padding="10dp" />
+
+                <ToggleButton
+                    android:id="@+id/fakeGps"
+                    android:layout_width="50dp"
+                    android:layout_height="50dp"
+                    android:layout_alignParentRight="true"
+                    android:gravity="center"
+                    android:textSize="15dp"
+                    android:textOff="Off"
+                    android:textOn="On"
+                    android:textColorHint="#000000"
+                    android:layout_margin="5dp"
+                    android:background="@drawable/circle_background_3"
+                    android:padding="10dp" />
+                <!--
+                <ImageButton
+                    android:id="@+id/eta"
+                    android:layout_width="50dp"
+                    android:layout_height="50dp"
+                    android:layout_below="@+id/fakeGps"
+                    android:layout_alignParentRight="true"
+                    android:textSize="15dp"
+                    android:layout_margin="5dp"
+                    android:src="@drawable/eta_icon"
+                    android:background="@drawable/circle_background_3"
+                    android:textColor="#FFFFFF"
+                    android:padding="10dp" />
+                    -->
+
+        </RelativeLayout>
+
+
+</FrameLayout>
