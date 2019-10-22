@@ -6,6 +6,7 @@ import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.database.Cursor;
@@ -24,6 +25,7 @@ import android.os.SystemClock;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -32,6 +34,7 @@ import android.view.animation.Interpolator;
 import android.view.animation.LinearInterpolator;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ToggleButton;
 
 import com.google.android.gms.common.internal.Constants;
 import com.google.android.gms.maps.CameraUpdate;
@@ -76,7 +79,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-public class NSGLiveTrackingRoutingApiClass3 extends Fragment implements GoogleMap.CancelableCallback{
+public class NSGLiveTrackingRoutingApiClass3 extends Fragment implements GoogleMap.CancelableCallback,View.OnClickListener{
     LatLng SourcePosition, DestinationPosition;
     //LatLng convertedSrcPosition,convertedDestinationPoisition;
     double sourceLat, sourceLng, destLat, destLng;
@@ -126,6 +129,10 @@ public class NSGLiveTrackingRoutingApiClass3 extends Fragment implements GoogleM
     private Marker gpsMarker;
     private TextView tv,tv1,tv2;
     private String MESSAGE;
+    private ToggleButton fakeGpsListener;
+    Marker fakeGpsMarker;
+    List<Marker> markerlist;
+
 
     public NSGLiveTrackingRoutingApiClass3() {
         // Required empty public constructor
@@ -158,6 +165,8 @@ public class NSGLiveTrackingRoutingApiClass3 extends Fragment implements GoogleM
         tv=(TextView)rootView.findViewById(R.id.tv);
         tv1=(TextView)rootView.findViewById(R.id.tv1);
         tv2=(TextView)rootView.findViewById(R.id.tv2);
+        fakeGpsListener=(ToggleButton)rootView.findViewById(R.id.fakeGps);
+        fakeGpsListener.setOnClickListener(this);
         SupportMapFragment mapFragment = (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.frg);  //use SuppoprtMapFragment for using in fragment instead of activity  MapFragment1 = activity   SupportMapFragment = fragment
         mapFragment.getMapAsync(new OnMapReadyCallback() {
             @Override
@@ -718,6 +727,8 @@ public class NSGLiveTrackingRoutingApiClass3 extends Fragment implements GoogleM
         LatLngDataArray.add(new LatLng(24.979649, 55.068197));
         LatLngDataArray.add(new LatLng(24.980780, 55.069589));
         LatLngDataArray.add(new LatLng(24.981187, 55.069988));
+        LatLngDataArray.add(new LatLng(24.981227, 55.070077));
+
         return LatLngDataArray.size();
     }
     private double getAngle(LatLng beginLatLng, LatLng endLatLng) {
@@ -826,7 +837,7 @@ public class NSGLiveTrackingRoutingApiClass3 extends Fragment implements GoogleM
         });
     }
     private void nextMoveAnimation() {
-        if (mIndexCurrentPoint < nearestPointValuesList.size() - 1) {
+        if (mIndexCurrentPoint < nearestPointValuesList.size()) {
             double resultdistance=showDistance(nearestPointValuesList.get(mIndexCurrentPoint),new LatLng(destLat,destLng)); //in km
             double resultMts=resultdistance*1000;
             String finalResultMts=String.format("%.2f", resultMts);
@@ -837,6 +848,25 @@ public class NSGLiveTrackingRoutingApiClass3 extends Fragment implements GoogleM
             tv.setText("Estimated Time : "+ resultTime +" SEC ");
             tv1.setText("DISTANCE : "+ finalResultMts +" Meters ");
             tv2.setText("Speed : "+ speed +"KMPH ");
+
+            LatLng cameraPosition=nearestPointValuesList.get(mIndexCurrentPoint);
+            CameraPosition cameraPos = new CameraPosition.Builder()
+                    .target(new LatLng(cameraPosition.latitude,cameraPosition.longitude))
+                    .zoom(20).bearing(0).tilt(10).build();
+            mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPos), 500, null);
+            if (mIndexCurrentPoint==nearestPointValuesList.size()-1) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(getContext(),R.style.yourDialog);
+                builder.setTitle("Alert");
+                builder.setIcon(R.drawable.car_icon_32);
+                builder.setMessage("Destination Reached")
+                        .setCancelable(false)
+                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int id) {
+                            }
+                        });
+                AlertDialog alert = builder.create();
+                alert.show();
+            }
             animateCarMove(mPositionMarker, nearestPointValuesList.get(mIndexCurrentPoint), nearestPointValuesList.get(mIndexCurrentPoint+1), 10000);
         }
     }
@@ -998,5 +1028,46 @@ public class NSGLiveTrackingRoutingApiClass3 extends Fragment implements GoogleM
 
     public void centerMapAt(LatLng latLng) {
         mMap.animateCamera(CameraUpdateFactory.newLatLng(latLng));
+    }
+    public void addFakeGPSMarkers(){
+        getLatLngPoints();
+        for(int p=0;p<LatLngDataArray.size();p++){
+            fakeGpsMarker =mMap.addMarker(new MarkerOptions()
+                    .position(LatLngDataArray.get(p))
+                    .icon(bitmapDescriptorFromVector(getActivity(),R.drawable.symbol_shackel_point)));
+            markerlist= new ArrayList<Marker>();
+            markerlist.add(fakeGpsMarker);
+        }
+        Log.e("MarkerList :", " MarkerList ----- " + markerlist.size());
+    }
+    public void removeFakeGPSMarkers(){
+        getLatLngPoints();
+        for(int p=0;p<LatLngDataArray.size();p++) {
+            if (markerlist != null && !markerlist.isEmpty()) {
+                //  markerlist.get(p).remove(); // Add this line
+                markerlist.remove(p);
+                if(  fakeGpsMarker.getPosition().equals(LatLngDataArray.get(p))){
+                    fakeGpsMarker.remove();
+                }
+            }
+        }
+        Log.e("MarkerList :", " MarkerList ----- " + markerlist.size());
+    }
+    @Override
+    public void onClick(View v) {
+        if(v==fakeGpsListener){
+            String fakeGpsText=fakeGpsListener.getText().toString();
+            if(fakeGpsText.equals("Off")){
+                fakeGpsListener.setBackgroundColor(Color.RED);
+                Log.e("Fake Gps Text :", " Fake Gps Text ----- " + fakeGpsText);
+                if(fakeGpsMarker!=null) {
+                    removeFakeGPSMarkers();
+                }
+            }else if(fakeGpsText.equals("On")){
+                fakeGpsListener.setBackgroundColor(Color.GREEN);
+                Log.e("Fake Gps Text :", " Fake Gps Text ------" + fakeGpsText);
+                addFakeGPSMarkers();
+            }
+        }
     }
 }

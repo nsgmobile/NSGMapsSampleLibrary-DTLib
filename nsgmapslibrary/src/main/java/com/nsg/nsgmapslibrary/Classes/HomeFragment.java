@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.res.Resources;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -22,6 +23,7 @@ import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -197,6 +199,7 @@ public class HomeFragment extends Fragment implements View.OnClickListener{
             public void onMapReady(GoogleMap googlemap) {
                 mMap = googlemap;
                 String BASE_MAP_URL_FORMAT = Environment.getExternalStorageDirectory() + File.separator + "MBTILES" + File.separator + "DubaiBasemap" + ".mbtiles";
+                Log.e("BaseMap","BaseMap"+BASE_MAP_URL_FORMAT);
                 // Environment.getExternalStorageDirectory() + File.separator + "samples"+ File.separator + sectionName+".mbtiles"
                 // Log.e("URL FORMAT","URL FORMAT ****************** "+ BASE_MAP_URL_FORMAT);
                 TileProvider tileProvider = new ExpandedMBTilesTileProvider(new File(BASE_MAP_URL_FORMAT.toString()), 256, 256);
@@ -220,7 +223,9 @@ public class HomeFragment extends Fragment implements View.OnClickListener{
                                 dialog.dismiss();
                                 // final LatLng position1 = new LatLng(sourceLat, sourceLng);
                                 if(enteredMode==1 &&edgeDataList!=null && edgeDataList.size()>0){
-                                    MoveWithGpsPointInBetWeenAllPoints();
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+                                        MoveWithGpsPointInBetWeenAllPoints();
+                                    }
                                 }else if(enteredMode==2){
                                    //CalculateNearestViaFakeGPS();
                                 }
@@ -672,17 +677,17 @@ public class HomeFragment extends Fragment implements View.OnClickListener{
                 .position(nearestPositionPoint)
                 .title("currentLocation")
                 .icon(bitmapDescriptorFromVector(getContext(), R.drawable.car_icon_32)));
-        // CameraPosition cameraPos = new CameraPosition.Builder()
-        //        .target(new LatLng(nearestPositionPoint.latitude,nearestPositionPoint.longitude))
-        //        .zoom(12).bearing(0).tilt(0).build();
-        // mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPos), null);
-
-        // mMap.moveCamera(center);
-        //  mMap.animateCamera(zoom);
       //  Log.e("Route Deviation ---","Route Deviation "+routeDeviationDistance);
       //  verifyRouteDeviation(routeDeviationDistance);
 
+/*
+        mMap.addMarker(new MarkerOptions()
+                .position(new LatLng( 24.986726,55.073200))
+                .title("currentLocation")
+                .icon(bitmapDescriptorFromVector(getContext(), R.drawable.circle_pink)));
+                */
         animateCarMove(mPositionMarker, nearestPointValuesList.get(0), nearestPointValuesList.get(1), 1000);
+
 
     }
     private LatLng findNearestPoint(final LatLng p, final LatLng start, final LatLng end) {
@@ -744,22 +749,23 @@ public class HomeFragment extends Fragment implements View.OnClickListener{
             Toast toast = Toast.makeText(getContext(), " ROUTE DEVIATED ", Toast.LENGTH_LONG);
             toast.setMargin(100, 100);
             toast.show();
+            Log.e("Route Deviation","Route deviation"+"Route Deviated");
             //drawDeviatedRoute(currentGpsPosition, DestinationPosition);
             String cgpsLat= String.valueOf(currentGpsPosition.latitude);
             String cgpsLongi= String.valueOf(currentGpsPosition.longitude);
             currentGpsPoint=cgpsLongi.concat(" ").concat(cgpsLat);
             Log.e("returnedDistance", "nearest Position--------- "+ nearestPosition);
             Log.e("returnedDistance", "Destination Position --------- "+ DestinationPosition);
-            //DestinationPosition=new LatLng(destLat,destLng);
-            //Log.e("returnedDistance", "DestinationPosition --------- "+ DestinationPosition);
-            //MarkerOptions markerOptions = new MarkerOptions();
-            // markerOptions.position(currentGpsPosition);
-            // markerOptions.position(DestinationPosition);
-            // markerOptions.title("Position");
+            DestinationPosition=new LatLng(destLat,destLng);
+            Log.e("returnedDistance", "DestinationPosition --------- "+ DestinationPosition);
+             MarkerOptions markerOptions = new MarkerOptions();
+             markerOptions.position(currentGpsPosition);
+             markerOptions.position(DestinationPosition);
+             markerOptions.title("Position");
 
             // ReRouteFeaturesFromServer download=new ReRouteFeaturesFromServer();
             //  download.execute();
-            /*
+
             polylineOptions.color(Color.RED);
             polylineOptions.width(6);
             points.add(nearestPosition);
@@ -778,8 +784,7 @@ public class HomeFragment extends Fragment implements View.OnClickListener{
                 } else
                     Toast.makeText(getContext(), "No route is found", Toast.LENGTH_LONG).show();
             }
-            */
-            //
+
 
         }else{
 
@@ -805,9 +810,13 @@ public class HomeFragment extends Fragment implements View.OnClickListener{
         LatLngDataArray.add(new LatLng(24.986903,55.072949));
         LatLngDataArray.add(new LatLng(24.986908,55.072972));
         LatLngDataArray.add(new LatLng(24.986901,55.072986));
+
+
         LatLngDataArray.add(new LatLng(24.986898,55.073016));
         LatLngDataArray.add(new LatLng(24.986865,55.073056));
-        LatLngDataArray.add(new LatLng(24.986726,55.073200));
+       // LatLngDataArray.add(new LatLng(24.986726,55.073200));
+
+
         LatLngDataArray.add(new LatLng(24.986652,55.073279));
         LatLngDataArray.add(new LatLng(24.986502,55.073438));
         LatLngDataArray.add(new LatLng(24.986242,55.073715));
@@ -917,6 +926,7 @@ public class HomeFragment extends Fragment implements View.OnClickListener{
         final float dAndgle = endAngle - startAngle;
 
         handler.post(new Runnable() {
+            @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
             @Override
             public void run() {
                 long elapsed = SystemClock.uptimeMillis() - startTime;
@@ -924,10 +934,14 @@ public class HomeFragment extends Fragment implements View.OnClickListener{
                 Matrix m = new Matrix();
                 float angle=startAngle + dAndgle * t;
                 m.postRotate(angle);
-                int width  = Resources.getSystem().getDisplayMetrics().widthPixels;
-                int height = Resources.getSystem().getDisplayMetrics().heightPixels;
-                Bitmap rotatedBitmap = Bitmap.createBitmap(mMarkerIcon, 0, 0, mMarkerIcon.getWidth(), mMarkerIcon.getHeight(), m, true);
-                marker.setIcon(BitmapDescriptorFactory.fromBitmap(rotatedBitmap));
+                Bitmap opBitMap= addPaddingLeftForBitmap(mMarkerIcon,60);
+                // marker.setIcon(BitmapDescriptorFactory.fromBitmap(Bitmap.createBitmap(mMarkerIcon, 0, 0,centreX, centreY, matrix, true)));
+               // marker.setIcon(BitmapDescriptorFactory.fromBitmap(Bitmap.createBitmap(opBitMap, 0, 0, opBitMap.getWidth(),opBitMap.getHeight(), m, true)));
+
+              //  int width  = Resources.getSystem().getDisplayMetrics().widthPixels;
+              //  int height = Resources.getSystem().getDisplayMetrics().heightPixels;
+              //  Bitmap opBitMap = Bitmap.createBitmap(opBitMap, 0, 0, opBitMap.getWidth(), opBitMap.getHeight(), m, true);
+                marker.setIcon(BitmapDescriptorFactory.fromBitmap(Bitmap.createBitmap(opBitMap, 0, 0, opBitMap.getWidth(),opBitMap.getHeight(), m, true)));
                 if (t < 1.0) {
                     handler.postDelayed(this, 16);
                 } else {
@@ -936,8 +950,9 @@ public class HomeFragment extends Fragment implements View.OnClickListener{
             }
         });
     }
+    @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
     private void nextMoveAnimation() {
-        if (mIndexCurrentPoint < nearestPointValuesList.size() - 1){
+        if (mIndexCurrentPoint < nearestPointValuesList.size()){
             double resultdistance=showDistance(nearestPointValuesList.get(mIndexCurrentPoint),new LatLng(destLat,destLng)); //in km
             //LatLng indexPoint=nearestPointValuesList.get(mIndexCurrentPoint);
             //double resultdistance=distFrom(indexPoint.latitude,indexPoint.longitude,destLat,destLng); //in km
@@ -959,9 +974,8 @@ public class HomeFragment extends Fragment implements View.OnClickListener{
 
             Bundle gameData = new Bundle();
             gameData.putStringArrayList("listEta",etaList);
-            //  Intent intent=new Intent(getContext(), NsG.class);
-            // intent.putExtras(gameData);
 
+            verifyRouteDeviation(25);
 
             tv.setText("Estimated Time : "+ resultTime +"Sec" );
             tv1.setText("DISTANCE : "+ finalResultMts +" Meters ");
@@ -972,6 +986,22 @@ public class HomeFragment extends Fragment implements View.OnClickListener{
                     .zoom(20).bearing(0).tilt(10).build();
             mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPos), 500, null);
             // mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPos), null);
+            Log.e("CameraPOS","CameraPos--------- "+ mIndexCurrentPoint);
+            Log.e("CameraPOS","CameraPos--------- "+ nearestPointValuesList.size());
+
+            if (mIndexCurrentPoint+1==nearestPointValuesList.size()) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(getContext(),R.style.yourDialog);
+                builder.setTitle("Alert");
+                builder.setIcon(R.drawable.car_icon_32);
+                builder.setMessage("Destination Reached")
+                        .setCancelable(false)
+                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int id) {
+                            }
+                        });
+                AlertDialog alert = builder.create();
+                alert.show();
+            }
             animateCarMove(mPositionMarker, nearestPointValuesList.get(mIndexCurrentPoint), nearestPointValuesList.get(mIndexCurrentPoint+1), 10000);
         }
     }

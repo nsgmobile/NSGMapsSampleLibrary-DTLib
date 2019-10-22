@@ -52,8 +52,6 @@ public class NSGApiActivity extends FragmentActivity implements HomeFragment.Fra
             Log.e("Route Details------", " Route Details------ " +" srcLatitude : "+ srcLatitude +"\n"+" srcLongitude : "+ srcLongitude +"\n"+" destLatitude : "+destLatitude+"\n"+" desLongitude : "+desLongitude+"\n");
             fragmentTransaction.add(R.id.map_container, new HomeFragment(srcLatitude,srcLongitude,destLatitude,desLongitude,enteredMode,bufferSize));//getRoutes Direction
             //fragmentTransaction.add(R.id.map_container, new HomeFragment());
-
-
          }
          if(charlsisNumber.equals("1HGBH41JXMN109186")) {
             srcLatitude = NSGIBundle.getDouble("srcLatitude");
@@ -91,8 +89,8 @@ public class NSGApiActivity extends FragmentActivity implements HomeFragment.Fra
         alertDialog.setMessage(comm);
 
         alertDialog.show(); */
-        tv1=(TextView)findViewById(R.id.text1);
-        tv1.setText(comm);
+        //tv1=(TextView)findViewById(R.id.text1);
+      //  tv1.setText(comm);
         return comm;
     }
     public void onResume() {

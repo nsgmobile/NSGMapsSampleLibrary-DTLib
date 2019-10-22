@@ -8,4 +8,16 @@
         <!-- Used for the background -->
         <item name="android:background">#ffffff</item>
     </style>
+
+
+    <style name="yourDialog" parent="Theme.AppCompat.Light.Dialog.Alert">
+        <item name="colorAccent">#159aac</item>
+        <!-- Used for the title and text -->
+        <item name="android:textColorPrimary">#d14040</item>
+        <!-- Used for the background -->
+        <item name="android:background">#ffffff</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:textSize">25dp</item>
+    </style>
 </resources>
