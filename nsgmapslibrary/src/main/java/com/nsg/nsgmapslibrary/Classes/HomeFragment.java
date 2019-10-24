@@ -19,6 +19,7 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.StrictMode;
 import android.os.SystemClock;
+import android.speech.tts.TextToSpeech;
 import android.support.annotation.Nullable;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.Fragment;
@@ -32,6 +33,7 @@ import android.view.animation.Interpolator;
 import android.view.animation.LinearInterpolator;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -80,10 +82,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 
 public class HomeFragment extends Fragment implements View.OnClickListener{
     private ProgressDialog dialog;
-
+    private TextToSpeech textToSpeech;
     LatLng SourcePosition, DestinationPosition;
     //LatLng convertedSrcPosition,convertedDestinationPoisition;
     double sourceLat, sourceLng, destLat, destLng;
@@ -138,10 +141,13 @@ public class HomeFragment extends Fragment implements View.OnClickListener{
     private ToggleButton fakeGpsListener;
     Marker fakeGpsMarker;
     List<Marker> markerlist;
-
     ArrayList<String> etaList;
+    private ArrayList lastDistancesList;
+    private double lastDistance;
+    private String geometryText;
+
     public interface FragmentToActivity {
-        String communicate(String comm);
+    String communicate(String comm);
 
     }
     private FragmentToActivity Callback;
@@ -167,7 +173,23 @@ public class HomeFragment extends Fragment implements View.OnClickListener{
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-
+        textToSpeech = new TextToSpeech(getContext(), new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                if (status == TextToSpeech.SUCCESS) {
+                    int ttsLang = textToSpeech.setLanguage(Locale.US);
+                    if (ttsLang == TextToSpeech.LANG_MISSING_DATA
+                            || ttsLang == TextToSpeech.LANG_NOT_SUPPORTED) {
+                        Log.e("TTS", "The Language is not supported!");
+                    } else {
+                        Log.i("TTS", "Language Supported.");
+                    }
+                    Log.i("TTS", "Initialization success.");
+                } else {
+                    Toast.makeText(getContext(), "TTS Initialization failed!", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
     }
     @Override
     public void onAttach(Context context) {
@@ -238,7 +260,6 @@ public class HomeFragment extends Fragment implements View.OnClickListener{
                 } else {
                     Toast.makeText(getActivity(), "please turn on wifi/mobiledata", Toast.LENGTH_LONG).show();
                 }
-
             }
         });
         return rootView;
@@ -274,9 +295,7 @@ public class HomeFragment extends Fragment implements View.OnClickListener{
         vectorDrawable.draw(canvas);
         return BitmapDescriptorFactory.fromBitmap(bitmap);
     }
-
     public void addMarkers(){
-
         LatLng position1= new LatLng(sourceLat,sourceLng);
         // Log.e("URL FORMAT","Uposition2 T ****************** "+ position1);
         sourceMarker = mMap.addMarker(new MarkerOptions()
@@ -288,10 +307,7 @@ public class HomeFragment extends Fragment implements View.OnClickListener{
                 .tilt(45)
                 .build();
         mMap.animateCamera(CameraUpdateFactory.newCameraPosition(googlePlex), 1000, null);
-
-
         LatLng position2= new LatLng(destLat,destLng);
-
         destinationMarker= mMap.addMarker(new MarkerOptions()
                 .position(position2)
                 .icon(bitmapDescriptorFromVector(getActivity(),R.drawable.destination_green)));
@@ -301,9 +317,7 @@ public class HomeFragment extends Fragment implements View.OnClickListener{
                 .tilt(45)
                 .build();
         mMap.animateCamera(CameraUpdateFactory.newCameraPosition(googlePlex1), 1000, null);
-
     }
-
     private void GetRouteDetails(){
         try{
             getActivity().runOnUiThread(new Runnable() {
@@ -315,7 +329,6 @@ public class HomeFragment extends Fragment implements View.OnClickListener{
                         StrictMode.setThreadPolicy(policy);
                         try {
                             String httprequest = "http://202.53.11.74/dtnavigation/api/routing/routenavigate";
-
                             String FeatureResponse = HttpPost(httprequest,SourcePoint,DestinationPoint);
                             Log.e("RESPONSE", "RESPONSE" + FeatureResponse);
                             JSONObject jsonObject = null;
@@ -324,7 +337,6 @@ public class HomeFragment extends Fragment implements View.OnClickListener{
                                     String delQuery = "DELETE  FROM " + EdgeDataT.TABLE_NAME;
                                     Log.e("DEL QUERY","DEL QUERY " + delQuery);
                                     sqlHandler.executeQuery(delQuery.toString());
-
                                     jsonObject = new JSONObject(FeatureResponse);
                                     String ID = String.valueOf(jsonObject.get("$id"));
                                     MESSAGE = jsonObject.getString("Message");
@@ -379,11 +391,12 @@ public class HomeFragment extends Fragment implements View.OnClickListener{
                                         //    String distanceInKM = String.valueOf(distance/1000);
                                         //    Log.e("Distance -----","Distance in KM-------- "+ distanceInKM);
                                         StringBuilder query = new StringBuilder("INSERT INTO ");
-                                        query.append(EdgeDataT.TABLE_NAME).append("(edgeNo,distanceInVertex,startPoint,allPoints,endPoint) values (")
+                                        query.append(EdgeDataT.TABLE_NAME).append("(edgeNo,distanceInVertex,startPoint,allPoints,geometryText,endPoint) values (")
                                                 .append("'").append(EdgeNo).append("',")
                                                 .append("'").append("distanceInKM").append("',")
                                                 .append("'").append(jSonLegs.get(0)).append("',")
                                                 .append("'").append(points).append("',")
+                                                .append("'").append(GeometryText).append("',")
                                                 .append("'").append(jSonLegs.get(jSonLegs.length()-1)).append("')");
                                         sqlHandler.executeQuery(query.toString());
                                         sqlHandler.closeDataBaseConnection();
@@ -527,6 +540,8 @@ public class HomeFragment extends Fragment implements View.OnClickListener{
                 String stPoint = edge.getStartPoint();
                 String endPoint = edge.getEndPoint();
                 String points = edge.getAllPoints();
+                geometryText = edge.getGeometryText();
+
                 //[[55.07252845510704,24.986485718893903], [55.07252691395126,24.986503080465624], [55.07252858393359,24.9865204314153], [55.072533418545014,24.986537282374343], [55.072541282105426,24.9865531573588]]
                 if(points!=null){
                     String AllPoints = points.replace("[", "");
@@ -635,14 +650,9 @@ public class HomeFragment extends Fragment implements View.OnClickListener{
                 double y= currentGpsPosition.longitude;
                 int value = (int)x;
                 int value1 = (int)y;
-
                 LatLng source=new LatLng(FirstLongitude,FirstLatitude);
                 LatLng destination=new LatLng(SecondLongitude,SecondLatitude);
-
-
                 nearestPositionPoint= findNearestPoint(currentGpsPosition,source,destination);
-
-
                 // point=getClosestPointOnSegment(FirstLatitudevalue,FirstLongitudevalue1,SecondLatitudeValue,SecondLongitudeValue,value,value1);
                 // double lat=point.latitude;
                 // double lnag=point.longitude;
@@ -651,18 +661,12 @@ public class HomeFragment extends Fragment implements View.OnClickListener{
                 // String[] nearestDataStr = nearestPoint.split(",");
                 // double latitude = Double.parseDouble(nearestDataStr[0]);
                 //  double longitude = Double.parseDouble(nearestDataStr[1]);
-
                 Log.e("centerFromPoint Point", "centerFromPoint POINT &&&&&&&&&&&&&&&&&&&&&& " + nearestPositionPoint);
-
-
                 //  nearestPositionPoint = new LatLng(longitude, latitude);
                 // nearestPositionPoint =
                 //         mMap.getProjection().getVisibleRegion().latLngBounds.getCenter();
-
                 //  nearestPointValuesList.add(nearestPositionPoint);
                 nearestPointValuesList.add(nearestPositionPoint);
-
-
             }
         }
 
@@ -715,8 +719,6 @@ public class HomeFragment extends Fragment implements View.OnClickListener{
 
         return new LatLng(start.latitude + (u * (end.latitude - start.latitude)),
                 start.longitude + (u * (end.longitude - start.longitude)));
-
-
     }
 
     private String GenerateLinePoint(double startPointX, double startPointY, double endPointX, double endPointY, double pointX, double pointY)
@@ -762,9 +764,10 @@ public class HomeFragment extends Fragment implements View.OnClickListener{
              markerOptions.position(currentGpsPosition);
              markerOptions.position(DestinationPosition);
              markerOptions.title("Position");
+             /*
 
-            // ReRouteFeaturesFromServer download=new ReRouteFeaturesFromServer();
-            //  download.execute();
+             ReRouteFeaturesFromServer download=new ReRouteFeaturesFromServer();
+              download.execute();
 
             polylineOptions.color(Color.RED);
             polylineOptions.width(6);
@@ -784,13 +787,12 @@ public class HomeFragment extends Fragment implements View.OnClickListener{
                 } else
                     Toast.makeText(getContext(), "No route is found", Toast.LENGTH_LONG).show();
             }
-
+            */
 
         }else{
 
         }
     }
-
     private void drawMarkerWithCircle(LatLng gpsPosition,double radius){
         // double radiusInMeters = 400.0;
         CircleOptions circleOptions = new CircleOptions().center(gpsPosition).radius(radius).fillColor(Color.parseColor("#2271cce7")).strokeColor(Color.parseColor("#2271cce7")).strokeWidth(3);
@@ -802,7 +804,7 @@ public class HomeFragment extends Fragment implements View.OnClickListener{
         return distance;
     }
     public int getLatLngPoints(){
-        /*Route--1*/
+        /*Route--1
         LatLngDataArray.add(new LatLng(24.986486,55.072528));
         LatLngDataArray.add(new LatLng(24.986599,55.072608));
         LatLngDataArray.add(new LatLng(24.986734,55.072730));
@@ -810,18 +812,65 @@ public class HomeFragment extends Fragment implements View.OnClickListener{
         LatLngDataArray.add(new LatLng(24.986903,55.072949));
         LatLngDataArray.add(new LatLng(24.986908,55.072972));
         LatLngDataArray.add(new LatLng(24.986901,55.072986));
-
-
         LatLngDataArray.add(new LatLng(24.986898,55.073016));
         LatLngDataArray.add(new LatLng(24.986865,55.073056));
        // LatLngDataArray.add(new LatLng(24.986726,55.073200));
-
-
         LatLngDataArray.add(new LatLng(24.986652,55.073279));
         LatLngDataArray.add(new LatLng(24.986502,55.073438));
         LatLngDataArray.add(new LatLng(24.986242,55.073715));
         LatLngDataArray.add(new LatLng(24.986131,55.073830));
         LatLngDataArray.add(new LatLng(24.986097,55.073878));
+        */
+
+        LatLngDataArray.add(new LatLng(24.978782,55.067291));
+        LatLngDataArray.add(new LatLng(24.9786559890011,55.0669970292443));
+        LatLngDataArray.add(new LatLng(24.9784084059624,55.0668971973738));
+
+        LatLngDataArray.add(new LatLng(24.9780250515799,55.0664619304187));
+        LatLngDataArray.add(new LatLng(24.9779931053814,55.0662263272045));
+
+        LatLngDataArray.add(new LatLng(24.9776097509989,55.0658150198983));
+        LatLngDataArray.add(new LatLng(24.9773577661311,55.0656917069084));
+        LatLngDataArray.add(new LatLng(24.9771317173355,55.0654359148503));
+
+
+        LatLngDataArray.add(new LatLng(24.977125768683,55.0652485322961));
+        LatLngDataArray.add(new LatLng(24.9771644349243,55.0651711998134));
+
+        LatLngDataArray.add(new LatLng(24.9772566390383,55.0648737671876));
+        LatLngDataArray.add(new LatLng(24.9776314041467,55.0646596156971));
+        LatLngDataArray.add(new LatLng(24.9778187867009,55.0642937735675));
+        LatLngDataArray.add(new LatLng(24.9780150922339,55.064287824915));
+
+        LatLngDataArray.add(new LatLng(24.9781372775566,55.0643145938513));
+        LatLngDataArray.add(new LatLng(24.9783557120769,55.0645658649335));
+        LatLngDataArray.add(new LatLng(24.9784799199414,55.0647757333942));
+
+        LatLngDataArray.add(new LatLng(24.9787326187002,55.0650612687149));
+        LatLngDataArray.add(new LatLng(24.9789624746334,55.0652568604096));
+
+        LatLngDataArray.add(new LatLng(24.9790310031104,55.0654124771594));
+        LatLngDataArray.add(new LatLng(24.9791309404726,55.0655595278495));
+
+        LatLngDataArray.add(new LatLng(24.9793522303461,55.0657065785397));
+        LatLngDataArray.add(new LatLng(24.9795049917427,55.06600067992));
+
+        LatLngDataArray.add(new LatLng(24.9797548351483,55.0661562966698));
+        LatLngDataArray.add(new LatLng(24.9799104518981,55.0664161338116));
+        LatLngDataArray.add(new LatLng(24.9800632132947,55.0665146434973));
+
+        LatLngDataArray.add(new LatLng(24.980123175712,55.0666745432769));
+        LatLngDataArray.add(new LatLng(24.9802174023679,55.0667944681116));
+        LatLngDataArray.add(new LatLng(24.9802216853977,55.0668301600267));
+
+        LatLngDataArray.add(new LatLng(24.9802145470147,55.0668744180014));
+
+        LatLngDataArray.add(new LatLng(24.9801460185377,55.0669458018315));
+        LatLngDataArray.add(new LatLng(24.9800717793543,55.0670728650492));
+        LatLngDataArray.add(new LatLng(24.979964703609,55.0671913622073));
+
+        LatLngDataArray.add(new LatLng(24.979878,55.067205));
+        LatLngDataArray.add(new LatLng(24.979878,55.067205));
 
         return LatLngDataArray.size();
     }
@@ -952,12 +1001,14 @@ public class HomeFragment extends Fragment implements View.OnClickListener{
     }
     @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
     private void nextMoveAnimation() {
+        lastDistancesList=new ArrayList();
         if (mIndexCurrentPoint < nearestPointValuesList.size()){
             double resultdistance=showDistance(nearestPointValuesList.get(mIndexCurrentPoint),new LatLng(destLat,destLng)); //in km
             //LatLng indexPoint=nearestPointValuesList.get(mIndexCurrentPoint);
             //double resultdistance=distFrom(indexPoint.latitude,indexPoint.longitude,destLat,destLng); //in km
            // double resultMts=resultdistance*1000;
-            String finalResultMts=String.format("%.2f", resultdistance);
+          //  String finalResultMts=String.format("%.2f", resultdistance);
+            String finalResultMts=String.format("%.0f", resultdistance);
             double speed=10.0; //kmph
             ETACalclator calculator=new ETACalclator();
             double resultTime=calculator.cal_time(resultdistance, speed);
@@ -980,6 +1031,12 @@ public class HomeFragment extends Fragment implements View.OnClickListener{
             tv.setText("Estimated Time : "+ resultTime +"Sec" );
             tv1.setText("DISTANCE : "+ finalResultMts +" Meters ");
             tv2.setText("Speed : "+ speed +"KMPH ");
+
+            String data=" in "+ finalResultMts +" Meters "+geometryText;
+            int speechStatus = textToSpeech.speak(data, TextToSpeech.QUEUE_FLUSH, null);
+            if (speechStatus == TextToSpeech.ERROR) {
+                Log.e("TTS", "Error in converting Text to Speech!");
+            }
             LatLng cameraPosition=nearestPointValuesList.get(mIndexCurrentPoint);
             CameraPosition cameraPos = new CameraPosition.Builder()
                     .target(new LatLng(cameraPosition.latitude,cameraPosition.longitude))
@@ -988,22 +1045,38 @@ public class HomeFragment extends Fragment implements View.OnClickListener{
             // mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPos), null);
             Log.e("CameraPOS","CameraPos--------- "+ mIndexCurrentPoint);
             Log.e("CameraPOS","CameraPos--------- "+ nearestPointValuesList.size());
+            animateCarMove(mPositionMarker, nearestPointValuesList.get(mIndexCurrentPoint), nearestPointValuesList.get(mIndexCurrentPoint+1), 10000);
 
-            if (mIndexCurrentPoint+1==nearestPointValuesList.size()) {
+            LatLng lastPoint=nearestPointValuesList.get(nearestPointValuesList.size()-1);
+            Log.e("lastPoint","lastPoint--------- "+ lastPoint);
+
+            lastDistance= showDistance(cameraPosition,lastPoint);
+            Log.e("lastDistance","lastDistance--------- "+ lastDistance );
+            lastDistancesList.add(lastDistance);
+            Log.e("lastDistance","lastDistance--------- "+ lastDistance );
+            Log.e("lastDistance---","Last Distances List Size--------- "+ lastDistancesList.size() );
+            if (lastDistance <10) {
+                String data1="Your Destination Reached";
+                int speechStatus1 = textToSpeech.speak(data1, TextToSpeech.QUEUE_FLUSH, null);
+                if (speechStatus1 == TextToSpeech.ERROR) {
+                   Log.e("TTS", "Error in converting Text to Speech!");
+                }
                 AlertDialog.Builder builder = new AlertDialog.Builder(getContext(),R.style.yourDialog);
                 builder.setTitle("Alert");
                 builder.setIcon(R.drawable.car_icon_32);
                 builder.setMessage("Destination Reached")
                         .setCancelable(false)
-                        .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                        .setPositiveButton(" STOP ", new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int id) {
+                                getActivity().getSupportFragmentManager().popBackStack();
                             }
                         });
                 AlertDialog alert = builder.create();
                 alert.show();
             }
-            animateCarMove(mPositionMarker, nearestPointValuesList.get(mIndexCurrentPoint), nearestPointValuesList.get(mIndexCurrentPoint+1), 10000);
+
         }
+
     }
     public static double distFrom(double lat1, double lng1, double lat2, double lng2) {
         double earthRadius = 6371000; //meters
@@ -1077,5 +1150,12 @@ public class HomeFragment extends Fragment implements View.OnClickListener{
 
         }
     }
-
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (textToSpeech != null) {
+            textToSpeech.stop();
+            textToSpeech.shutdown();
+        }
+    }
 }

@@ -6,14 +6,17 @@
     android:padding="10dp"
     android:background="#DAAA" >
 
-    <ImageView android:id="@+id/image"
+    <ImageView android:id="@+id/image_toast"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
+        android:src="@drawable/black_car"
         android:layout_marginRight="10dp" />
 
-    <TextView android:id="@+id/text"
+    <TextView android:id="@+id/textView_toast"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
+        android:background="#DAAA"
+        android:padding="20dp"
         android:textColor="#FFF" />
 
 </LinearLayout>

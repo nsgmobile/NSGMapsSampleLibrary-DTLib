@@ -21,6 +21,7 @@ public class EdgeDataT {
     private String timeDuration;
     private String geometryType;
     private String geometry;
+    private String geometryText;
     private String allPoints;
     private String distanceInVertex;
 
@@ -33,16 +34,18 @@ public class EdgeDataT {
         MAPPING.add(new DatabaseColumn("endPoint", "setEndPoint",false,false,true,"text"));
         MAPPING.add(new DatabaseColumn("allPoints", "setAllPoints",false,false,true,"text"));
         MAPPING.add(new DatabaseColumn("distanceInVertex", "setDistanceInVertex",false,false,true,"text"));
+        MAPPING.add(new DatabaseColumn("geometryText", "setGeometryText",false,false,true,"text"));
 
     }
     public EdgeDataT(){}
-    public EdgeDataT(String edgeNo, String startPoint , String endPoint,String allPoints,String distanceInVertex ){
+    public EdgeDataT(String edgeNo, String startPoint , String endPoint,String allPoints,String distanceInVertex,String geometryText ){
 
         this.edgeNo=edgeNo;
         this.startPoint=startPoint;
         this.endPoint=endPoint;
         this.allPoints=allPoints;
-
+        this.distanceInVertex=distanceInVertex;
+        this.geometryText=geometryText;
     }
 
     public Integer getSid() {
@@ -91,5 +94,13 @@ public class EdgeDataT {
 
     public void setDistanceInVertex(String distanceInVertex) {
         this.distanceInVertex = distanceInVertex;
+    }
+
+    public String getGeometryText() {
+        return geometryText;
+    }
+
+    public void setGeometryText(String geometryText) {
+        this.geometryText = geometryText;
     }
 }

@@ -11,7 +11,7 @@
 
 
     <style name="yourDialog" parent="Theme.AppCompat.Light.Dialog.Alert">
-        <item name="colorAccent">#159aac</item>
+        <item name="colorAccent">#d14040</item>
         <!-- Used for the title and text -->
         <item name="android:textColorPrimary">#d14040</item>
         <!-- Used for the background -->
@@ -19,5 +19,20 @@
         <item name="android:textStyle">bold</item>
         <item name="android:maxLines">1</item>
         <item name="android:textSize">25dp</item>
+    </style>
+
+
+
+    <style name="AlertDialogTheme" parent="Theme.AppCompat.Light.Dialog.Alert">
+        <item name="colorAccent">#FFFFFF</item>
+        <item name="android:background">#ffffff</item>
+        <item name="android:textColorPrimary">#d14040</item>
+        <item name="android:windowTitleStyle">@style/WindowTitleStyle</item>
+
+    </style>
+
+    <style name="WindowTitleStyle"
+        parent="TextAppearance.AppCompat.Title">
+        <item name="android:textColor">#d14040</item>
     </style>
 </resources>

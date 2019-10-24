@@ -14,10 +14,13 @@ import com.nsg.nsgmapslibrary.Classes.NSGLiveTrackingRoutingApiClass1;
 public class HomeActivity extends FragmentActivity implements HomeFragment.FragmentToActivity {
    // private HomeFragment.FragmentToActivity listener ;
     private TextView tv,tv1;
-    double srcLatitude = 55.072528;
-    double srcLongitude = 24.986486;
-    double destLatitude = 55.073878;
-    double desLongitude = 24.986097;
+    private double srcLatitude=55.067291;
+    private double srcLongitude=24.978782;
+    private double destLatitude=55.067205;
+    private double desLongitude=24.979878;
+
+
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);

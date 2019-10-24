@@ -65,6 +65,7 @@ public class JobDetails extends Activity {
                         double srcLongitude = 24.986486;
                         double destLatitude = 55.073878;
                         double desLongitude = 24.986097;
+
                         Intent NSGIIntent = new Intent(JobDetails.this, NSGApiActivity.class);
                         Bundle NSGIBundle = new Bundle();
                         NSGIBundle.putString("charlsisNumber", "1HGBH41JXMN109185");
