@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/slot1"
+        android:title="NORMAL"
+        android:visible="true"/>
+    <item
+        android:id="@+id/slot2"
+        android:title="SATELLITE"
+        android:visible="true"/>
+    <item
+        android:id="@+id/slot3"
+        android:title="TERRAIN"
+        android:visible="true"/>
+    <item
+        android:id="@+id/slot4"
+        android:title="HYBRID"
+        android:visible="true"/>
+
+</menu>

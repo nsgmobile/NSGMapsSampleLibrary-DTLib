@@ -1,13 +1,12 @@
 package com.nsg.nsgmapslibrary.Classes;
 
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
+import android.Manifest;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.database.Cursor;
 import android.graphics.Bitmap;
@@ -16,6 +15,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.drawable.Drawable;
+import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
@@ -23,6 +23,7 @@ import android.os.Handler;
 import android.os.StrictMode;
 import android.os.SystemClock;
 import android.support.annotation.RequiresApi;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
@@ -36,7 +37,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 
-import com.google.android.gms.common.internal.Constants;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -47,16 +47,14 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.CircleOptions;
+import com.google.android.gms.maps.model.JointType;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
-import com.google.android.gms.maps.model.TileOverlay;
-import com.google.android.gms.maps.model.TileOverlayOptions;
-import com.google.android.gms.maps.model.TileProvider;
 import com.google.maps.android.SphericalUtil;
-import com.nsg.nsgmapslibrary.Classes.ExpandedMBTilesTileProvider;
 import com.nsg.nsgmapslibrary.R;
 import com.nsg.nsgmapslibrary.SupportClasses.ETACalclator;
 import com.nsg.nsgmapslibrary.SupportClasses.Util;
@@ -79,6 +77,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
 public class NSGLiveTrackingRoutingApiClass3 extends Fragment implements GoogleMap.CancelableCallback,View.OnClickListener{
     LatLng SourcePosition, DestinationPosition;
     //LatLng convertedSrcPosition,convertedDestinationPoisition;
@@ -119,7 +119,7 @@ public class NSGLiveTrackingRoutingApiClass3 extends Fragment implements GoogleM
     Bitmap mMarkerIcon;
     int mIndexCurrentPoint=0;
     private List<LatLng> edgeDataPointsList ;
-    private List AllPointsList ;
+
     private ProgressDialog dialog;
     private LatLng newCenterLatLng,PointData;
     private List distancesList;
@@ -132,6 +132,16 @@ public class NSGLiveTrackingRoutingApiClass3 extends Fragment implements GoogleM
     private ToggleButton fakeGpsListener;
     Marker fakeGpsMarker;
     List<Marker> markerlist;
+    private List<String> listData;
+    private int emission = 0;
+    private List AllPointsList ;
+    private List keyList;
+    private List keyValuesList;
+    Map<String, List> mapOfLists = new HashMap<String, List>();
+    Map<String, LatLng> mapOfEdgeLists = new HashMap<String, LatLng>();
+    List<String> entitiesList = new ArrayList<String>();
+    List<EdgeDataT>DataList;
+    private int locationFakeGpsListener=0;
 
 
     public NSGLiveTrackingRoutingApiClass3() {
@@ -173,15 +183,13 @@ public class NSGLiveTrackingRoutingApiClass3 extends Fragment implements GoogleM
             public void onMapReady(GoogleMap googlemap) {
                 mMap = googlemap;
                 String BASE_MAP_URL_FORMAT = Environment.getExternalStorageDirectory() + File.separator + "MBTILES" + File.separator + "DubaiBasemap" + ".mbtiles";
-                // Environment.getExternalStorageDirectory() + File.separator + "samples"+ File.separator + sectionName+".mbtiles"
-                // Log.e("URL FORMAT","URL FORMAT ****************** "+ BASE_MAP_URL_FORMAT);
-                TileProvider tileProvider = new ExpandedMBTilesTileProvider(new File(BASE_MAP_URL_FORMAT.toString()), 256, 256);
-                TileOverlay tileOverlay = mMap.addTileOverlay(new TileOverlayOptions()
-                        .tileProvider(tileProvider));
-                tileOverlay.setTransparency(0.5f - tileOverlay.getTransparency());
-                tileOverlay.setVisible(true);
+                //   TileProvider tileProvider = new ExpandedMBTilesTileProvider(new File(BASE_MAP_URL_FORMAT.toString()), 256, 256);
+                //TileOverlay tileOverlay = mMap.addTileOverlay(new TileOverlayOptions()
+                //        .tileProvider(tileProvider));
+               // tileOverlay.setTransparency(0.5f - tileOverlay.getTransparency());
+               // tileOverlay.setVisible(true);
 
-                if (Util.isInternetAvailable(getActivity()) == true && mMap != null && tileOverlay.isVisible()==true) {
+                if (Util.isInternetAvailable(getActivity()) == true && mMap != null ) {
                     dialog = new ProgressDialog(getActivity(), R.style.ProgressDialog);
                     dialog.setMessage("Fetching Route");
                     dialog.setMax(100);
@@ -196,7 +204,40 @@ public class NSGLiveTrackingRoutingApiClass3 extends Fragment implements GoogleM
                                 dialog.dismiss();
                                 // final LatLng position1 = new LatLng(sourceLat, sourceLng);
                                 if(enteredMode==1 &&edgeDataList!=null && edgeDataList.size()>0){
-                                    MoveWithGpsPointInBetWeenAllPoints();
+
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+                                        // MoveWithGPSMARKER();
+                                        if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                                            // TODO: Consider calling
+                                            //    ActivityCompat#requestPermissions
+                                            return;
+                                        }
+                                        mMap.setMyLocationEnabled(true);
+                                        mMap.setBuildingsEnabled(true);
+                                        mMap.getUiSettings().setZoomControlsEnabled(true);
+                                        mMap.getUiSettings().setCompassEnabled(true);
+                                        mMap.getUiSettings().setMyLocationButtonEnabled(true);
+                                        mMap.getUiSettings().setMapToolbarEnabled(true);
+                                        mMap.getUiSettings().setZoomGesturesEnabled(true);
+                                        mMap.getUiSettings().setScrollGesturesEnabled(true);
+                                        mMap.getUiSettings().setTiltGesturesEnabled(true);
+                                        mMap.getUiSettings().setRotateGesturesEnabled(true);
+                                        mMap.getUiSettings().setMyLocationButtonEnabled(true);
+                                        mMap.setOnMyLocationChangeListener(new GoogleMap.OnMyLocationChangeListener() {
+                                            @Override
+                                            public void onMyLocationChange(Location location) {
+                                                if (mPositionMarker != null) {
+                                                    mPositionMarker.remove();
+                                                }
+
+
+                                                getLatLngPoints();
+                                               // currentGpsPosition = LatLngDataArray.get(locationFakeGpsListener);
+                                                MoveWithGpsPointInBetWeenAllPoints();
+                                               // locationFakeGpsListener = locationFakeGpsListener + 1;
+                                            }
+                                        });
+                                    }
                                 }else if(enteredMode==2){
                                     CalculateNearestViaFakeGPS();
                                 }
@@ -270,41 +311,42 @@ public class NSGLiveTrackingRoutingApiClass3 extends Fragment implements GoogleM
                                     String delQuery = "DELETE  FROM " + EdgeDataT.TABLE_NAME;
                                     Log.e("DEL QUERY","DEL QUERY " + delQuery);
                                     sqlHandler.executeQuery(delQuery.toString());
-
                                     jsonObject = new JSONObject(FeatureResponse);
                                     String ID = String.valueOf(jsonObject.get("$id"));
                                     MESSAGE = jsonObject.getString("Message");
                                     String Status = jsonObject.getString("Status");
                                     String TotalDistance = jsonObject.getString("TotalDistance");
                                     JSONArray jSonRoutes = new JSONArray(jsonObject.getString("Route"));
-                                    Log.e("jSonRoutes", "jSonRoutes" + jSonRoutes);
+                                    // Log.e("jSonRoutes", "jSonRoutes" + jSonRoutes);
+                                    PolylineOptions polylineOptions = new PolylineOptions();
+                                    Polyline polyline = null;
+                                    convertedPoints=new ArrayList<LatLng>();
                                     for (int i = 0; i < jSonRoutes.length(); i++) {
                                         points=new ArrayList();
-                                        convertedPoints=new ArrayList<LatLng>();
-                                        Log.e("jSonRoutes", "jSonRoutes" + jSonRoutes.get(i));
+                                        // Log.e("jSonRoutes", "jSonRoutes" + jSonRoutes.get(i));
                                         // List Routes=new ArrayList();
                                         // Routes.add(jSonRoutes.get(i));
                                         JSONObject Routes = new JSONObject(jSonRoutes.get(i).toString());
                                         String $id = Routes.getString("$id");
                                         String EdgeNo = Routes.getString("EdgeNo");
                                         String GeometryText = Routes.getString("GeometryText");
-                                        Log.e("GeometryText", "GeometryText" + GeometryText);
+                                        // Log.e("GeometryText", "GeometryText" + GeometryText);
                                         String Geometry = Routes.getString("Geometry");
-                                        Log.e("Geometry", "Geometry----" + Geometry);
+                                        // Log.e("Geometry", "Geometry----" + Geometry);
                                         JSONObject geometryObject = new JSONObject(Routes.getString("Geometry"));
                                         String $id1 = geometryObject.getString("$id");
                                         String type = geometryObject.getString("type");
-                                        Log.e("type", "type----" + type);
+                                        // Log.e("type", "type----" + type);
                                         String coordinates = geometryObject.getString("coordinates");
-                                        Log.e("coordinates", "coordinates----" + coordinates);
+                                        // Log.e("coordinates", "coordinates----" + coordinates);
                                         JSONArray jSonLegs = new JSONArray(geometryObject.getString("coordinates"));
-                                        Log.e("jSonLegs", "jSonLegs----" + jSonLegs);
+                                        // Log.e("jSonLegs", "jSonLegs----" + jSonLegs);
                                         for (int j = 0; j < jSonLegs.length(); j++) {
-                                            Log.e("JSON LEGS", "JSON CORDINATES" + jSonLegs.get(j));
+                                            //   Log.e("JSON LEGS", "JSON CORDINATES" + jSonLegs.get(j));
                                             points.add(jSonLegs.get(j));
-                                            Log.e("JSON LEGS", " LATLNG RESULT------ " + points.size());
+                                            //    Log.e("JSON LEGS", " LATLNG RESULT------ " + points.size());
                                         }
-                                        Log.e("JSON LEGS", " LATLNG RESULT------ " + points.size());
+                                        // Log.e("JSON LEGS", " LATLNG RESULT------ " + points.size());
                                         String  stPoint=String.valueOf(jSonLegs.get(0));
                                         // String  endPoint=String.valueOf(jSonLegs.get(jSonLegs.length()-1));
 
@@ -325,57 +367,49 @@ public class NSGLiveTrackingRoutingApiClass3 extends Fragment implements GoogleM
                                         //    String distanceInKM = String.valueOf(distance/1000);
                                         //    Log.e("Distance -----","Distance in KM-------- "+ distanceInKM);
                                         StringBuilder query = new StringBuilder("INSERT INTO ");
-                                        query.append(EdgeDataT.TABLE_NAME).append("(edgeNo,distanceInVertex,startPoint,allPoints,endPoint) values (")
+                                        query.append(EdgeDataT.TABLE_NAME).append("(edgeNo,distanceInVertex,startPoint,allPoints,geometryText,endPoint) values (")
                                                 .append("'").append(EdgeNo).append("',")
                                                 .append("'").append("distanceInKM").append("',")
                                                 .append("'").append(jSonLegs.get(0)).append("',")
                                                 .append("'").append(points).append("',")
+                                                .append("'").append(GeometryText).append("',")
                                                 .append("'").append(jSonLegs.get(jSonLegs.length()-1)).append("')");
                                         sqlHandler.executeQuery(query.toString());
                                         sqlHandler.closeDataBaseConnection();
                                         for (int p = 0; p < points.size(); p++) {
-                                            Log.e("JSON LEGS", "JSON POINTS LIST ---- " + points.get(p));
+                                            //    Log.e("JSON LEGS", "JSON POINTS LIST ---- " + points.get(p));
                                             String listItem = points.get(p).toString();
                                             listItem = listItem.replace("[", "");
                                             listItem = listItem.replace("]", "");
-                                            Log.e("JSON LEGS", "JSON POINTS LIST ---- " + listItem);
+                                            //   Log.e("JSON LEGS", "JSON POINTS LIST ---- " + listItem);
                                             String[] subListItem = listItem.split(",");
-                                            Log.e("JSON LEGS", "JSON POINTS LIST ---- " + subListItem.length);
-                                            Log.e("JSON LEGS", "JSON POINTS LIST ---- " + subListItem[0]);
-                                            Log.e("JSON LEGS", "JSON POINTS LIST ---- " + subListItem[1]);
+                                            //  Log.e("JSON LEGS", "JSON POINTS LIST ---- " + subListItem.length);
+                                            //  Log.e("JSON LEGS", "JSON POINTS LIST ---- " + subListItem[0]);
+                                            //  Log.e("JSON LEGS", "JSON POINTS LIST ---- " + subListItem[1]);
                                             Double y = Double.valueOf(subListItem[0]);
                                             Double x = Double.valueOf(subListItem[1]);
                                             StringBuilder sb=new StringBuilder();
                                             //  sb.append(x).append(",").append(y).append(":");
                                             //  LocationPerpedicularPoints.add(sb.toString());
                                             LatLng latLng = new LatLng(x, y);
-                                            Log.e("JSON LEGS", " LATLNG RESULT------ " + latLng);
+                                            //   Log.e("JSON LEGS", " LATLNG RESULT------ " + latLng);
                                             convertedPoints.add(latLng);
-                                            for (int k = 0; k < convertedPoints.size(); k++) {
-                                                MarkerOptions markerOptions = new MarkerOptions();
-                                                PolylineOptions polylineOptions = new PolylineOptions();
-                                                if(polylineOptions!=null && mMap!=null) {
-                                                    markerOptions.position(convertedPoints.get(k));
-                                                    markerOptions.title("Position");
-                                                    // polylineOptions.color(Color.RED);
-                                                    // polylineOptions.width(6);
-                                                    polylineOptions.addAll(convertedPoints);
-                                                    // polylineOptions.color(Color.GREEN).width(10);
-                                                    polylineOptions.color(Color.BLACK).width(12);
-                                                    // Polyline polyline =
-                                                    mMap.addPolyline(polylineOptions);
-                                                    polylineOptions.color(Color.CYAN).width(18);
-                                                    mMap.addPolyline(polylineOptions);
-
-                                                }
-
-                                            }
-
                                         }
-
-
+                                        Log.e("convertedPoints", " convertedPoints------ " +  convertedPoints.size());
+                                        MarkerOptions markerOptions = new MarkerOptions();
+                                        for (int k = 0; k < convertedPoints.size(); k++) {
+                                            if(polylineOptions!=null && mMap!=null) {
+                                                markerOptions.position(convertedPoints.get(k));
+                                                markerOptions.title("Position");
+                                            }
+                                            // polyline.setGeodesic(true);
+                                        }
                                     }
-
+                                    polylineOptions.addAll(convertedPoints);
+                                    polyline = mMap.addPolyline(polylineOptions);
+                                    polylineOptions.color(Color.CYAN).width(30);
+                                    mMap.addPolyline(polylineOptions);
+                                    polyline.setJointType(JointType.ROUND);
                                 }
 
 
@@ -477,10 +511,15 @@ public class NSGLiveTrackingRoutingApiClass3 extends Fragment implements GoogleM
     }
 
     public void MoveWithGpsPointInBetWeenAllPoints(){
-        getLatLngPoints();
+      //  getLatLngPoints();
         getAllEdgesData();
         edgeDataPointsList = new ArrayList<LatLng>();
-
+        keyList=new ArrayList();
+        keyValuesList=new ArrayList();
+       // etaList=new ArrayList<>();
+        nearestPointValuesList=new ArrayList<LatLng>();
+        nearestPointValuesList.add(new LatLng(sourceLat,sourceLng));
+        DataList=new ArrayList<EdgeDataT>();
         //LatLng srcP1=new LatLng(sourceLat,sourceLng);
         // edgeDataPointsList.add(SourcePosition);
         if (edgeDataList != null && edgeDataList.size() > 0) {
@@ -488,150 +527,237 @@ public class NSGLiveTrackingRoutingApiClass3 extends Fragment implements GoogleM
             for (int i = 0; i < edgeDataList.size(); i++) {
                 EdgeDataT edge = new EdgeDataT();
                 edge = edgeDataList.get(i);
-                edge.getEdgeNo();
+                int edgeNo= edge.getEdgeNo();
                 String stPoint = edge.getStartPoint();
                 String endPoint = edge.getEndPoint();
                 String points = edge.getAllPoints();
+                String geometryText  = edge.getGeometryText();
+
+                String dataStr = points.replace("[", "");
+                dataStr = dataStr.replace("]", "");
+                String ptData[] = dataStr.split(",");
+                double Lat = Double.parseDouble(ptData[0]);
+                double Lang = Double.parseDouble(ptData[1]);
+                PointData = new LatLng(Lat, Lang);
+                edgeDataPointsList.add(PointData);
+                for (int j = 0; j < LatLngDataArray.size(); j++) {
+                   currentGpsPosition = LatLngDataArray.get(j);
+                    // List<LatLng> EdgeWithoutDuplicates = new ArrayList<>(edgeDataPointsList);
+                    List<LatLng> EdgeWithoutDuplicates = removeDuplicates(edgeDataPointsList);
+                    if (EdgeWithoutDuplicates != null && EdgeWithoutDuplicates.size() > 0) {
+                        Log.e("currentGpsPosition ", "currentGpsPosition POINT----------" + currentGpsPosition);
+                        String FirstCordinate="",SecondCordinate="";
+                        distancesList = new ArrayList();
+                        distanceValuesList = new ArrayList();
+                        hash_map = new HashMap<String, String>();
+                        for (int epList = 0; epList < EdgeWithoutDuplicates.size(); epList++) {
+                            LatLng PositionMarkingPoint = EdgeWithoutDuplicates.get(epList);
+                            Log.e("currentGpsPosition ", "PositionMarking POINT----------" + PositionMarkingPoint);
+                            Log.e("currentGpsPosition ", "currentGpsPosition POINT----------" + currentGpsPosition);
+
+                            double distance = distFrom(PositionMarkingPoint.latitude,PositionMarkingPoint.longitude,currentGpsPosition.longitude,currentGpsPosition.latitude);
+                            //distanceValuesList.add("A"+" # "+edgeDataPointsList.get(epList));
+                            // Mapping string values to int keys
+                            // List<LatLng> deduped = list.stream().distinct().collect(Collectors.toList());
+                            ;
+                            hash_map.put(String.valueOf(distance), String.valueOf(EdgeWithoutDuplicates.get(epList)));
+                            // distanceValuesList.add("A"+" ");
+                            //  Log.e("Sorted ArrayList ", "in Ascending order : " + distanceValuesList.get(epList));
+                            distancesList.add(distance);
+                            Collections.sort(distancesList);
+                        }
+
+
+                        String FirstShortestDistance = String.valueOf(distancesList.get(0));
+                        String SecondShortestDistance = String.valueOf(distancesList.get(1));
+                        boolean answerFirst= hash_map.containsKey(FirstShortestDistance);
+                        if (answerFirst) {
+                            System.out.println("The list contains " + FirstShortestDistance);
+                            FirstCordinate = (String)hash_map.get(FirstShortestDistance);
+                            Log.e("Sorted ArrayList ", "INDEX----- : " + FirstCordinate);
+                        } else {
+                            System.out.println("The list does not contains "+ "FALSE");
+                        }
+                        boolean answerSecond= hash_map.containsKey(SecondShortestDistance);
+                        if (answerSecond) {
+                            System.out.println("The list contains " + SecondShortestDistance);
+                            SecondCordinate = (String)hash_map.get(SecondShortestDistance);
+                            Log.e("Sorted ArrayList ", "INDEX----- : " + SecondCordinate);
+                        } else {
+                            System.out.println("The list does not contains "+ "FALSE");
+                        }
+                        String First= FirstCordinate.replace("lat/lng: (","");
+                        First= First.replace(")","");
+                        String[] FirstLatLngsData=First.split(",");
+                        double FirstLatitude= Double.valueOf(FirstLatLngsData[0]);
+                        double FirstLongitude= Double.valueOf(FirstLatLngsData[1]);
+
+                        Log.e("Sorted ArrayList ", "-----FirstLatitude :" + FirstLatitude);
+                        Log.e("Sorted ArrayList ", "-----FirstLongitude" + FirstLongitude);
+                        // String[] SecondCordinateArray = SecondCordinate.split("#");
+                        //  Log.e("Sorted ArrayList ", "in Ascending order ---AT 2--- :" + SecondCordinateArray[0]);
+                        String Second= SecondCordinate.replace("lat/lng: (","");
+                        Second= Second.replace(")","");
+                        String[] SecondLatLngsData=Second.split(",");
+                        double SecondLatitude= Double.valueOf(SecondLatLngsData[0]);
+                        double SecondLongitude= Double.valueOf(SecondLatLngsData[1]);
+
+                        Log.e("Sorted ArrayList ", "-----SecondLatitude :" + SecondLatitude);
+                        Log.e("Sorted ArrayList ", "-----SecondLongitude" + SecondLongitude);
+                        double x= currentGpsPosition.longitude;
+                        double y= currentGpsPosition.longitude;
+                        int value = (int)x;
+                        int value1 = (int)y;
+                        LatLng source=new LatLng(FirstLongitude,FirstLatitude);
+                        LatLng destination=new LatLng(SecondLongitude,SecondLatitude);
+                        nearestPositionPoint= findNearestPoint(currentGpsPosition,source,destination);
+                        nearestPointValuesList.add(nearestPositionPoint);
+                    }
+                }
+            }
+        }
+
+
+        Log.e("EdgeSt Point", "End point" + LatLngDataArray.size());
+        CameraPosition googlePlex = CameraPosition.builder()
+                .target(new LatLng(sourceLat,sourceLng))
+                .zoom(25)
+                .tilt(45)
+                .build();
+        mMap.animateCamera(CameraUpdateFactory.newCameraPosition(googlePlex), 1000, null);
+        mPositionMarker = mMap.addMarker(new MarkerOptions()
+                .position(nearestPositionPoint)
+                .title("currentLocation")
+                .icon(bitmapDescriptorFromVector(getContext(), R.drawable.red_marker_24)));
+        //  Log.e("Route Deviation ---","Route Deviation "+routeDeviationDistance);
+        //  verifyRouteDeviation(routeDeviationDistance);
+        Log.e("NEAREST POSITION---","NEAREST POSITION POINT "+ nearestPositionPoint);
+        if(nearestPointValuesList.size()>1) {
+            //  Log.e("NEAREST POSITION---","NEAREST Source Position ------ "+ nearestPointValuesList.get(0));
+            //  Log.e("NEAREST POSITION---","NEAREST Destination Position ------- "+  nearestPointValuesList.get(1));
+          //  animateCarMove(mPositionMarker, nearestPointValuesList.get(0), nearestPointValuesList.get(1), 1000);
+            animateCarOnMap(nearestPointValuesList);
+
+        }
+
+    }
+    private void animateCarOnMap(final List<LatLng> latLngs) {
+        LatLngBounds.Builder builder = new LatLngBounds.Builder();
+        for (LatLng latLng : latLngs) {
+            builder.include(latLng);
+        }
+        LatLngBounds bounds = builder.build();
+        CameraUpdate mCameraUpdate = CameraUpdateFactory.newLatLngBounds(bounds, 2);
+        mMap.animateCamera(mCameraUpdate);
+        if (emission == 1) {
+            mPositionMarker = mMap.addMarker(new MarkerOptions().position(latLngs.get(0))
+                    .flat(true)
+                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_car)));
+        }
+        mPositionMarker.setPosition(latLngs.get(0));
+        ValueAnimator valueAnimator = ValueAnimator.ofFloat(0, 1);
+        valueAnimator.setDuration(1000);
+        valueAnimator.setInterpolator(new LinearInterpolator());
+        valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator valueAnimator) {
+               float v = valueAnimator.getAnimatedFraction();
+                double lng = v * latLngs.get(1).longitude + (1 - v)
+                        * latLngs.get(0).longitude;
+                double lat = v * latLngs.get(1).latitude + (1 - v)
+                        * latLngs.get(0).latitude;
+                LatLng newPos = new LatLng(lat, lng);
+                mPositionMarker.setPosition(newPos);
+                mPositionMarker.setAnchor(0.5f, 0.5f);
+                mPositionMarker.setRotation(getBearing(latLngs.get(0), newPos));
+                mMap.animateCamera(CameraUpdateFactory.newCameraPosition
+                        (new CameraPosition.Builder().target(newPos)
+                                .zoom(15.5f).build()));
+            }
+        });
+        valueAnimator.start();
+    }
+    private float getBearing(LatLng begin, LatLng end) {
+        double lat = Math.abs(begin.latitude - end.latitude);
+        double lng = Math.abs(begin.longitude - end.longitude);
+
+        if (begin.latitude < end.latitude && begin.longitude < end.longitude)
+            return (float) (Math.toDegrees(Math.atan(lng / lat)));
+        else if (begin.latitude >= end.latitude && begin.longitude < end.longitude)
+            return (float) ((90 - Math.toDegrees(Math.atan(lng / lat))) + 90);
+        else if (begin.latitude >= end.latitude && begin.longitude >= end.longitude)
+            return (float) (Math.toDegrees(Math.atan(lng / lat)) + 180);
+        else if (begin.latitude < end.latitude && begin.longitude >= end.longitude)
+            return (float) ((90 - Math.toDegrees(Math.atan(lng / lat))) + 270);
+        return -1;
+    }
+
+    public void MoveWithGpsPointInBetWeenAllPointsWithDirection(){
+        getLatLngPoints();
+        getAllEdgesData();
+        AllPointsList=new ArrayList();
+        edgeDataPointsList = new ArrayList<LatLng>();
+        // etaList=new ArrayList<>();
+        nearestPointValuesList=new ArrayList<LatLng>();
+        nearestPointValuesList.add(new LatLng(sourceLat,sourceLng));
+        //LatLng srcP1=new LatLng(sourceLat,sourceLng);
+        // edgeDataPointsList.add(SourcePosition);
+        if (edgeDataList != null && edgeDataList.size() > 0) {
+
+            for (int i = 0; i < edgeDataList.size(); i++) {
+                EdgeDataT edge = new EdgeDataT();
+                edge = edgeDataList.get(i);
+                int edgeNo= edge.getEdgeNo();
+                String edgeDirection= edge.getGeometryText();
+                String stPoint = edge.getStartPoint();
+                String endPoint = edge.getEndPoint();
+                String points = edge.getAllPoints();
+                //  geometryText  = edge.getGeometryText();
+                //  Log.e("EdgePoints Data","EdgePoints Data Geometry" + geometryText);
                 //[[55.07252845510704,24.986485718893903], [55.07252691395126,24.986503080465624], [55.07252858393359,24.9865204314153], [55.072533418545014,24.986537282374343], [55.072541282105426,24.9865531573588]]
                 if(points!=null){
                     String AllPoints = points.replace("[", "");
                     AllPoints = AllPoints.replace("]", "");
                     String[] AllPointsArray = AllPoints.split(", ");
                     Log.e("ALL POINTS", "ALL POINTS" + AllPointsArray.length);
-
                     for (int ap = 0; ap < AllPointsArray.length; ap++) {
                         AllPointsList.add(AllPointsArray[ap]);
+                        Log.e("ALL POINTS", "ALL POINTS" + AllPointsList.size());
                     }
                 }
+                Log.e("ALL POINTS", "ALL POINTS" + AllPointsList.size());
+                for(int k=0; k<AllPointsList.size();k++){
+                    Log.e("ALL POINTS", "ALL POINTS---" + AllPointsList.get(k));
+
+                }
             }
         }
-        Log.e("ALL POINTS ", "FROM DATABASE ----- " + AllPointsList.size());
-        for (int pntCount = 0; pntCount < AllPointsList.size(); pntCount++) {
-            String data = String.valueOf(AllPointsList.get(pntCount));
-            String dataStr = data.replace("[", "");
-            dataStr = dataStr.replace("]", "");
-            String ptData[] = dataStr.split(",");
-            double Lat = Double.parseDouble(ptData[0]);
-            double Lang = Double.parseDouble(ptData[1]);
-            PointData = new LatLng(Lat, Lang);
-            edgeDataPointsList.add(PointData);
-            Log.e("ALL POINTS ", "FROM DATABASE ----- " + edgeDataPointsList.get(pntCount));
+
+    }
+    private LatLng findNearestPoint(final LatLng p, final LatLng start, final LatLng end) {
+        if (start.equals(end)) {
+            return start;
         }
-        Log.e("ALL POINTS ", "FROM DATABASE ----- " + AllPointsList.size());
-        Log.e("ALL POINTS ", "FROM DATABASE ----- " + edgeDataPointsList.size());
-        nearestPointValuesList=new ArrayList<LatLng>();
-        for (int j = 0; j < LatLngDataArray.size(); j++) {
-            currentGpsPosition = LatLngDataArray.get(j);
-            // List<LatLng> EdgeWithoutDuplicates = new ArrayList<>(edgeDataPointsList);
-            List<LatLng> EdgeWithoutDuplicates = removeDuplicates(edgeDataPointsList);
-            if (EdgeWithoutDuplicates != null && EdgeWithoutDuplicates.size() > 0) {
-                Log.e("currentGpsPosition ", "currentGpsPosition POINT----------" + currentGpsPosition);
-                String FirstCordinate="",SecondCordinate="";
-                distancesList = new ArrayList();
-                distanceValuesList = new ArrayList();
-                hash_map = new HashMap<String, String>();
-                for (int epList = 0; epList < EdgeWithoutDuplicates.size(); epList++) {
-                    LatLng PositionMarkingPoint = EdgeWithoutDuplicates.get(epList);
-                    Log.e("currentGpsPosition ", "PositionMarking POINT----------" + PositionMarkingPoint);
-                    Log.e("currentGpsPosition ", "currentGpsPosition POINT----------" + currentGpsPosition);
+        final double s0lat = Math.toRadians(p.latitude);
+        final double s0lng = Math.toRadians(p.longitude);
+        final double s1lat = Math.toRadians(start.latitude);
+        final double s1lng = Math.toRadians(start.longitude);
+        final double s2lat = Math.toRadians(end.latitude);
+        final double s2lng = Math.toRadians(end.longitude);
 
-                    double distance = distFrom(PositionMarkingPoint.latitude,PositionMarkingPoint.longitude,currentGpsPosition.longitude,currentGpsPosition.latitude);
-                    //distanceValuesList.add("A"+" # "+edgeDataPointsList.get(epList));
-                    // Mapping string values to int keys
-                    // List<LatLng> deduped = list.stream().distinct().collect(Collectors.toList());
-                    ;
-                    hash_map.put(String.valueOf(distance), String.valueOf(EdgeWithoutDuplicates.get(epList)));
-                    // distanceValuesList.add("A"+" ");
-                    //  Log.e("Sorted ArrayList ", "in Ascending order : " + distanceValuesList.get(epList));
-                    distancesList.add(distance);
-                    Collections.sort(distancesList);
-                }
-                for(int i=0;i<distancesList.size();i++) {
-                    Log.e("Sorted ArrayList ", "in Ascending order : " + distancesList.get(i));
-                }
-
-                String FirstShortestDistance = String.valueOf(distancesList.get(0));
-                String SecondShortestDistance = String.valueOf(distancesList.get(1));
-                boolean answerFirst= hash_map.containsKey(FirstShortestDistance);
-                if (answerFirst) {
-                    System.out.println("The list contains " + FirstShortestDistance);
-                    FirstCordinate = (String)hash_map.get(FirstShortestDistance);
-                    Log.e("Sorted ArrayList ", "INDEX----- : " + FirstCordinate);
-                } else {
-                    System.out.println("The list does not contains "+ "FALSE");
-                }
-                boolean answerSecond= hash_map.containsKey(SecondShortestDistance);
-                if (answerSecond) {
-                    System.out.println("The list contains " + SecondShortestDistance);
-                    SecondCordinate = (String)hash_map.get(SecondShortestDistance);
-                    Log.e("Sorted ArrayList ", "INDEX----- : " + SecondCordinate);
-                } else {
-                    System.out.println("The list does not contains "+ "FALSE");
-                }
-
-                //  String[] FirstCordinateArray = FirstCordinate.split("#");
-                //  Log.e("Sorted ArrayList ", "in Ascending order ----AT 1---: " + FirstCordinateArray[0]);
-                String First= FirstCordinate.replace("lat/lng: (","");
-                First= First.replace(")","");
-                String[] FirstLatLngsData=First.split(",");
-                Double FirstLatitude= Double.valueOf(FirstLatLngsData[0]);
-                Double FirstLongitude= Double.valueOf(FirstLatLngsData[1]);
-                Log.e("Sorted ArrayList ", "-----FirstLatitude :" + FirstLatitude);
-                Log.e("Sorted ArrayList ", "-----FirstLongitude" + FirstLongitude);
-                // String[] SecondCordinateArray = SecondCordinate.split("#");
-                //  Log.e("Sorted ArrayList ", "in Ascending order ---AT 2--- :" + SecondCordinateArray[0]);
-                String Second= SecondCordinate.replace("lat/lng: (","");
-                Second= Second.replace(")","");
-                String[] SecondLatLngsData=Second.split(",");
-                Double SecondLatitude= Double.valueOf(SecondLatLngsData[0]);
-                Double SecondLongitude= Double.valueOf(SecondLatLngsData[1]);
-
-                Log.e("Sorted ArrayList ", "-----SecondLatitude :" + SecondLatitude);
-                Log.e("Sorted ArrayList ", "-----SecondLongitude" + SecondLongitude);
-
-                String nearestPoint = GenerateLinePoint(FirstLatitude, FirstLongitude, SecondLatitude, SecondLongitude, currentGpsPosition.longitude, currentGpsPosition.latitude);
-                Log.e("NEAREST POINT", "NEAREST POINT----------" + nearestPoint);
-                String[] nearestDataStr = nearestPoint.split(",");
-                double latitude = Double.parseDouble(nearestDataStr[0]);
-                double longitude = Double.parseDouble(nearestDataStr[1]);
-                nearestPositionPoint = new LatLng(longitude, latitude);
-                nearestPointValuesList.add(nearestPositionPoint);
-
-            }
+        double s2s1lat = s2lat - s1lat;
+        double s2s1lng = s2lng - s1lng;
+        final double u = ((s0lat - s1lat) * s2s1lat + (s0lng - s1lng) * s2s1lng)
+                / (s2s1lat * s2s1lat + s2s1lng * s2s1lng);
+        if (u <= 0) {
+            return start;
         }
-        Log.e("NEAREST Point", "NEAREST POINT &&&&&&&&&&&&&&&&&&&&&& " + nearestPositionPoint);
-        for(int i=0;i<nearestPointValuesList.size();i++) {
-            Log.e("Sorted ArrayList ", " NEAREST POINT LIST VALUES : " + nearestPointValuesList.get(i));
-
+        if (u >= 1) {
+            return end;
         }
-        Log.e("EdgeSt Point", "End point" + LatLngDataArray.size());
-        // animateLatLngZoom(nearestPositionPoint, 15, 5, 10);
-        // mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(nearestPositionPoint.latitude,nearestPositionPoint.longitude, 48));
-        mPositionMarker = mMap.addMarker(new MarkerOptions()
-                .position(nearestPositionPoint)
-                .title("currentLocation")
-                .icon(bitmapDescriptorFromVector(getContext(), R.drawable.ic_car_symbol)));
-        CameraPosition googlePlex = CameraPosition.builder()
-                .target(new LatLng(sourceLat,sourceLng))
-                .zoom(15)
-                .tilt(45)
-                .build();
-        mMap.animateCamera(CameraUpdateFactory.newCameraPosition(googlePlex), 1000, null);
-        CameraUpdate center=
-                CameraUpdateFactory.newLatLng(new LatLng(nearestPositionPoint.latitude,
-                        nearestPositionPoint.longitude));
-        CameraUpdate zoom=CameraUpdateFactory.zoomTo(15);
 
-        mMap.moveCamera(center);
-        mMap.animateCamera(zoom);
-
-        // verifyRouteDeviation(routeDeviationDistance);
-        //  animateMarkerToFinalDestination(mPositionMarker,DestinationPosition,new LatLngInterpolator.Spherical());
-        // animateMarker(mMap,mPositionMarker,LatLngDataArray,false);
-        // animateMarkerViaVertex(mPositionMarker,new LatLngInterpolator.Spherical());
-        // animateMarkerNew(newCenterLatLng,mPositionMarker);
-        animateCarMove(mPositionMarker, nearestPointValuesList.get(0), nearestPointValuesList.get(1), 1000);
-
+        return new LatLng(start.latitude + (u * (end.latitude - start.latitude)),
+                start.longitude + (u * (end.longitude - start.longitude)));
     }
 
     private String GenerateLinePoint(double startPointX, double startPointY, double endPointX, double endPointY, double pointX, double pointY)

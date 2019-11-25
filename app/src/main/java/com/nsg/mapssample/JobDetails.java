@@ -24,7 +24,6 @@ public class JobDetails extends Activity {
  // private double destLatitude=55.067205;
 //  private double desLongitude=24.979878;
 
-
    private int enteredMode=1;
    private int bufferSize=10;
    private String charlsisNumber;
@@ -61,10 +60,17 @@ public class JobDetails extends Activity {
                 Log.e("SpinnerDT :", " Selected Item From SpinnerDT " + charlsisNumber);
              //   if (charlsisNumber.isEmpty()) {
                     if (charlsisNumber.equals("1HGBH41JXMN109185")) {
-                        double srcLatitude = 55.072528;
-                        double srcLongitude = 24.986486;
-                        double destLatitude = 55.073878;
-                        double desLongitude = 24.986097;
+                        double srcLatitude=55.067291;
+                        double srcLongitude=24.978782;
+                        double destLatitude=55.067205;
+                        double desLongitude=24.979878;
+
+                        //24.979878,55.067205
+                        //24.978488,55.066921 24.981227,55.070077
+                       // double srcLatitude = 55.072528;
+                      //  double srcLongitude = 24.986486;
+                      //  double destLatitude = 55.073878;
+                      //  double desLongitude = 24.986097;
 
                         Intent NSGIIntent = new Intent(JobDetails.this, NSGApiActivity.class);
                         Bundle NSGIBundle = new Bundle();
@@ -98,6 +104,7 @@ public class JobDetails extends Activity {
                         double srcLongitude = 24.978488;
                         double destLatitude = 55.070077;
                         double desLongitude = 24.981227;
+
                         Intent NSGIIntent = new Intent(JobDetails.this, NSGApiActivity.class);
                         Bundle NSGIBundle = new Bundle();
                         NSGIBundle.putString("charlsisNumber", "1HGBH41JXMN109187");

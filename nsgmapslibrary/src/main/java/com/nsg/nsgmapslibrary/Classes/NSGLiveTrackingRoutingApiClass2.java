@@ -48,13 +48,17 @@ import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polygon;
+import com.google.android.gms.maps.model.PolygonOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.maps.model.TileOverlay;
 import com.google.android.gms.maps.model.TileOverlayOptions;
 import com.google.android.gms.maps.model.TileProvider;
+import com.google.maps.android.PolyUtil;
 import com.google.maps.android.SphericalUtil;
 import com.nsg.nsgmapslibrary.Classes.ExpandedMBTilesTileProvider;
 import com.nsg.nsgmapslibrary.R;
@@ -180,6 +184,87 @@ public class NSGLiveTrackingRoutingApiClass2 extends Fragment implements GoogleM
                         .tileProvider(tileProvider));
                 tileOverlay.setTransparency(0.5f - tileOverlay.getTransparency());
                 tileOverlay.setVisible(true);
+                mMap.setBuildingsEnabled(true);
+                mMap.setBuildingsEnabled(true);
+                /*
+                Polygon polygon = mMap.addPolygon(new PolygonOptions()
+                        .add(   new LatLng(24.997631202047927,55.07903607176733),
+                                new LatLng(24.994943800450407,55.08188145253859),
+                                new LatLng(24.97188040995721,55.05534878834661),
+                                new LatLng(24.974253804379885,55.052859097191366),
+                                new LatLng(24.97333303087801,55.051774176738625),
+                                new LatLng(24.975922876821002,55.04905955187892),
+                                new LatLng(24.97686569894065,55.05012017041875),
+                                new LatLng(24.977013208550122,55.04999522736928),
+                                new LatLng(24.98105413788837,55.054525318253745),
+                                new LatLng(24.981239546680065,55.05459527344463),
+                                new LatLng(24.986517227672824,55.05239502998611),
+                                new LatLng(24.988904885932133,55.05771226137448),
+                                new LatLng(24.988855585254097,55.0577091240746),
+                                new LatLng(24.98882002682904,55.057734217250925),
+                                new LatLng(24.981821286589813,55.06074200734972),
+                                new LatLng(24.982168190131457,55.061141878974404),
+                                new LatLng(24.98209526808512,55.061173181159056)
+                        )
+                        .strokeColor(Color.GRAY)
+                        .strokeWidth(2)
+                        .fillColor(getResources().getColor(R.color.colorWater)));
+                listOfLatLng=new ArrayList<>();
+                listOfLatLng.add(new LatLng(24.997631202047927,55.07903607176733));
+                listOfLatLng.add(        new LatLng(24.994943800450407,55.08188145253859));
+                listOfLatLng.add(        new LatLng(24.97188040995721,55.05534878834661));
+                listOfLatLng.add(        new LatLng(24.974253804379885,55.052859097191366));
+                listOfLatLng.add(       new LatLng(24.97333303087801,55.051774176738625));
+                listOfLatLng.add(       new LatLng(24.975922876821002,55.04905955187892));
+                listOfLatLng.add(       new LatLng(24.97686569894065,55.05012017041875));
+                listOfLatLng.add(       new LatLng(24.977013208550122,55.04999522736928));
+                listOfLatLng.add(       new LatLng(24.98105413788837,55.054525318253745));
+                listOfLatLng.add(       new LatLng(24.981239546680065,55.05459527344463));
+                listOfLatLng.add(       new LatLng(24.986517227672824,55.05239502998611));
+                listOfLatLng.add(       new LatLng(24.988904885932133,55.05771226137448));
+                listOfLatLng.add(       new LatLng(24.988855585254097,55.0577091240746));
+                listOfLatLng.add(       new LatLng(24.98882002682904,55.057734217250925));
+                listOfLatLng.add(       new LatLng(24.981821286589813,55.06074200734972));
+                listOfLatLng.add(       new LatLng(24.982168190131457,55.061141878974404));
+                listOfLatLng.add(       new LatLng(24.98209526808512,55.061173181159056));
+
+                LatLngBounds.Builder builder = LatLngBounds.builder();
+                for(int i = 0 ; i < listOfLatLng.size() ; i++) {
+                    builder.include(listOfLatLng.get(i));
+                }
+                LatLngBounds bounds = builder.build();
+
+                BitmapDescriptor icon = BitmapDescriptorFactory.fromResource(R.drawable.water);
+
+                double boundHeight = bounds.northeast.latitude - bounds.southwest.latitude;
+                double boundWidth = bounds.northeast.longitude - bounds.southwest.longitude;
+
+                double gridCntLat = 1;  // 5 icons vertically
+                double gridCntLon = 1;  // 5 icons horizontally
+
+                double dLat = (bounds.northeast.latitude - bounds.southwest.latitude) / gridCntLat;
+                double dLng = (bounds.northeast.longitude - bounds.southwest.longitude) / gridCntLon;
+
+                double lat = dLat + bounds.southwest.latitude;
+
+                while (lat < bounds.northeast.latitude) {
+                    double lon = dLng + bounds.southwest.longitude;
+                    while (lon < bounds.northeast.longitude) {
+
+                        LatLng iconPos = new LatLng(lat, lon);
+
+                        if (PolyUtil.containsLocation(iconPos, listOfLatLng, true)) {
+                            MarkerOptions markerOptions = new MarkerOptions().position(iconPos)
+                                    .draggable(false)
+                                    .flat(true)
+                                    .icon(icon);
+                            mMap.addMarker(markerOptions);
+                        }
+                        lon += dLng;
+                    }
+                    lat += dLat;
+                }
+                */
 
                 if (Util.isInternetAvailable(getActivity()) == true && mMap != null && tileOverlay.isVisible()==true) {
                     dialog = new ProgressDialog(getActivity(), R.style.ProgressDialog);
@@ -591,8 +676,6 @@ public class NSGLiveTrackingRoutingApiClass2 extends Fragment implements GoogleM
 
                 LatLng source=new LatLng(FirstLongitude,FirstLatitude);
                 LatLng destination=new LatLng(SecondLongitude,SecondLatitude);
-
-
                 nearestPositionPoint= findNearestPoint(currentGpsPosition,source,destination);
 
               //  String nearestPoint = GenerateLinePoint(FirstLatitude, FirstLongitude, SecondLatitude, SecondLongitude, currentGpsPosition.longitude, currentGpsPosition.latitude);
@@ -616,8 +699,8 @@ public class NSGLiveTrackingRoutingApiClass2 extends Fragment implements GoogleM
         mPositionMarker = mMap.addMarker(new MarkerOptions()
                 .position(nearestPositionPoint)
                 .title("currentLocation")
-                .icon(bitmapDescriptorFromVector(getContext(), R.drawable.ic_car_symbol)));
-        CameraPosition googlePlex = CameraPosition.builder()
+                .icon(bitmapDescriptorFromVector(getContext(), R.drawable.gps_transperent)));
+     /*   CameraPosition googlePlex = CameraPosition.builder()
                 .target(new LatLng(sourceLat,sourceLng))
                 .zoom(15)
                 .tilt(45)
@@ -630,14 +713,66 @@ public class NSGLiveTrackingRoutingApiClass2 extends Fragment implements GoogleM
 
         mMap.moveCamera(center);
         mMap.animateCamera(zoom);
+        */
 
         // verifyRouteDeviation(routeDeviationDistance);
         //  animateMarkerToFinalDestination(mPositionMarker,DestinationPosition,new LatLngInterpolator.Spherical());
         // animateMarker(mMap,mPositionMarker,LatLngDataArray,false);
-        // animateMarkerViaVertex(mPositionMarker,new LatLngInterpolator.Spherical());
-        // animateMarkerNew(newCenterLatLng,mPositionMarker);
-        animateCarMove(mPositionMarker, nearestPointValuesList.get(0), nearestPointValuesList.get(1), 1000);
 
+        // animateMarkerNew(newCenterLatLng,mPositionMarker);
+      //  animateCarOnMap(nearestPointValuesList);
+
+    }
+    private void animateCarOnMap(final List<LatLng> latLngs) {
+        int emission = 0;
+        LatLngBounds.Builder builder = new LatLngBounds.Builder();
+        for (LatLng latLng : latLngs) {
+            builder.include(latLng);
+        }
+        LatLngBounds bounds = builder.build();
+        CameraUpdate mCameraUpdate = CameraUpdateFactory.newLatLngBounds(bounds, 2);
+        mMap.animateCamera(mCameraUpdate);
+        if (emission == 1) {
+            mPositionMarker = mMap.addMarker(new MarkerOptions().position(latLngs.get(0))
+                    .flat(true)
+                    .icon(BitmapDescriptorFactory.fromResource(R.drawable.gps_transperent)));
+        }
+        mPositionMarker.setPosition(latLngs.get(0));
+        ValueAnimator valueAnimator = ValueAnimator.ofFloat(0, 1);
+        valueAnimator.setDuration(1000);
+        valueAnimator.setInterpolator(new LinearInterpolator());
+        valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator valueAnimator) {
+                float v = valueAnimator.getAnimatedFraction();
+                double lng = v * latLngs.get(1).longitude + (1 - v)
+                        * latLngs.get(0).longitude;
+                double lat = v * latLngs.get(1).latitude + (1 - v)
+                        * latLngs.get(0).latitude;
+                LatLng newPos = new LatLng(lat, lng);
+                mPositionMarker.setPosition(newPos);
+                mPositionMarker.setAnchor(0.5f, 0.5f);
+                mPositionMarker.setRotation(getBearing(latLngs.get(0), newPos));
+                mMap.animateCamera(CameraUpdateFactory.newCameraPosition
+                        (new CameraPosition.Builder().target(newPos)
+                                .zoom(20).build()));
+            }
+        });
+        valueAnimator.start();
+    }
+    private float getBearing(LatLng begin, LatLng end) {
+        double lat = Math.abs(begin.latitude - end.latitude);
+        double lng = Math.abs(begin.longitude - end.longitude);
+
+        if (begin.latitude < end.latitude && begin.longitude < end.longitude)
+            return (float) (Math.toDegrees(Math.atan(lng / lat)));
+        else if (begin.latitude >= end.latitude && begin.longitude < end.longitude)
+            return (float) ((90 - Math.toDegrees(Math.atan(lng / lat))) + 90);
+        else if (begin.latitude >= end.latitude && begin.longitude >= end.longitude)
+            return (float) (Math.toDegrees(Math.atan(lng / lat)) + 180);
+        else if (begin.latitude < end.latitude && begin.longitude >= end.longitude)
+            return (float) ((90 - Math.toDegrees(Math.atan(lng / lat))) + 270);
+        return -1;
     }
 
     private String GenerateLinePoint(double startPointX, double startPointY, double endPointX, double endPointY, double pointX, double pointY)
@@ -1106,4 +1241,163 @@ public class NSGLiveTrackingRoutingApiClass2 extends Fragment implements GoogleM
             }
         }
     }
+
+    /*
+        public void MoveWithGpsPointInBetWeenAllPoints(){
+        getLatLngPoints();// get FakeGps points
+        getAllEdgesData(); // get All edges data
+        edgeDataPointsList = new ArrayList<LatLng>();
+        etaList=new ArrayList<>();
+        nearestPointValuesList=new ArrayList<LatLng>();
+        nearestPointValuesList.add(new LatLng(sourceLat,sourceLng));
+        if (edgeDataList != null && edgeDataList.size() > 0) {
+            AllPointsList=new ArrayList();
+            AllPointEdgeNo=new HashMap<>();
+            for (int i = 0; i < edgeDataList.size(); i++) {
+                EdgeDataT edge = new EdgeDataT(); //creating object for EDGETABLE
+                edge = edgeDataList.get(i);
+                int edgeNo = edge.getEdgeNo(); //Edge Number
+                String stPoint = edge.getStartPoint(); //Start Point
+                String endPoint = edge.getEndPoint();//End Point
+                String points = edge.getAllPoints(); // All points in the edge
+                geometryText  = edge.getGeometryText(); // Geometry Direction text
+                Log.e("EdgePoints Data","EdgePoints Data Geometry " + geometryText+" : "+ edgeNo);
+                //[[55.07252845510704,24.986485718893903], [55.07252691395126,24.986503080465624], [55.07252858393359,24.9865204314153], [55.072533418545014,24.986537282374343], [55.072541282105426,24.9865531573588]]
+                if(points!=null){
+                    String AllPoints = points.replace("[", "");
+                    AllPoints = AllPoints.replace("]", "");
+                    String[] AllPointsArray = AllPoints.split(", ");
+                    Log.e("ALL POINTS", "ALL POINTS" + AllPointsArray.length);
+                    for (int ap = 0; ap < AllPointsArray.length; ap++) {
+                        AllPointsList.add(AllPointsArray[ap]);
+                        AllPointEdgeNo.put(edgeNo,AllPointsArray[ap]);
+                    }
+                    Log.e("ALL POINTS ", "FROM DATABASE ----- " + AllPointEdgeNo.size());
+                }
+            }
+        }
+
+        for (int pntCount = 0; pntCount < AllPointEdgeNo.size(); pntCount++) {
+            Log.e("ALL POINTS ", "FROM DATABASE with Edge no----- " + AllPointsList.get(pntCount));
+            Log.e("ALL POINTS ", "AllPoints with Edge no----- " + AllPointEdgeNo.get(pntCount));
+            String data = String.valueOf(AllPointsList.get(pntCount));
+            String dataStr = data.replace("[", "");
+            dataStr = dataStr.replace("]", "");
+            String ptData[] = dataStr.split(",");
+            double Lat = Double.parseDouble(ptData[0]);
+            double Lang = Double.parseDouble(ptData[1]);
+            PointData = new LatLng(Lat, Lang);
+            edgeDataPointsList.add(PointData);
+            Log.e("ALL POINTS ", "FROM DATABASE ----- " + edgeDataPointsList.get(pntCount));
+        }
+        Log.e("ALL POINTS ", "FROM DATABASE ----- " + AllPointsList.size());
+        Log.e("ALL POINTS ", "FROM DATABASE ----- " + edgeDataPointsList.size());
+
+        for (int j = 0; j < LatLngDataArray.size(); j++) {
+            currentGpsPosition = LatLngDataArray.get(j);
+            // List<LatLng> EdgeWithoutDuplicates = new ArrayList<>(edgeDataPointsList);
+            List<LatLng> EdgeWithoutDuplicates = removeDuplicates(edgeDataPointsList);
+            if (EdgeWithoutDuplicates != null && EdgeWithoutDuplicates.size() > 0) {
+                Log.e("currentGpsPosition ", "currentGpsPosition POINT----------" + currentGpsPosition);
+                String FirstCordinate="",SecondCordinate="";
+                distancesList = new ArrayList();
+                distanceValuesList = new ArrayList();
+                hash_map = new HashMap<String, String>();
+                for (int epList = 0; epList < EdgeWithoutDuplicates.size(); epList++) {
+                    LatLng PositionMarkingPoint = EdgeWithoutDuplicates.get(epList);
+                    Log.e("currentGpsPosition ", "PositionMarking POINT----------" + PositionMarkingPoint);
+                    Log.e("currentGpsPosition ", "currentGpsPosition POINT----------" + currentGpsPosition);
+
+                    double distance = distFrom(PositionMarkingPoint.latitude,PositionMarkingPoint.longitude,currentGpsPosition.longitude,currentGpsPosition.latitude);
+                    //distanceValuesList.add("A"+" # "+edgeDataPointsList.get(epList));
+                    // Mapping string values to int keys
+                    // List<LatLng> deduped = list.stream().distinct().collect(Collectors.toList());
+                    ;
+                    hash_map.put(String.valueOf(distance), String.valueOf(EdgeWithoutDuplicates.get(epList)));
+                    // distanceValuesList.add("A"+" ");
+                    //  Log.e("Sorted ArrayList ", "in Ascending order : " + distanceValuesList.get(epList));
+                    distancesList.add(distance);
+                    Collections.sort(distancesList);
+                }
+                for(int i=0;i<distancesList.size();i++) {
+                    Log.e("Sorted ArrayList ", "in Ascending order : " + distancesList.get(i));
+                }
+
+                String FirstShortestDistance = String.valueOf(distancesList.get(0));
+                String SecondShortestDistance = String.valueOf(distancesList.get(1));
+                boolean answerFirst= hash_map.containsKey(FirstShortestDistance);
+                if (answerFirst) {
+                    System.out.println("The list contains " + FirstShortestDistance);
+                    FirstCordinate = (String)hash_map.get(FirstShortestDistance);
+                    Log.e("Sorted ArrayList ", "INDEX----- : " + FirstCordinate);
+                } else {
+                    System.out.println("The list does not contains "+ "FALSE");
+                }
+                boolean answerSecond= hash_map.containsKey(SecondShortestDistance);
+                if (answerSecond) {
+                    System.out.println("The list contains " + SecondShortestDistance);
+                    SecondCordinate = (String)hash_map.get(SecondShortestDistance);
+                    Log.e("Sorted ArrayList ", "INDEX----- : " + SecondCordinate);
+                } else {
+                    System.out.println("The list does not contains "+ "FALSE");
+                }
+                String First= FirstCordinate.replace("lat/lng: (","");
+                First= First.replace(")","");
+                String[] FirstLatLngsData=First.split(",");
+                double FirstLatitude= Double.valueOf(FirstLatLngsData[0]);
+                double FirstLongitude= Double.valueOf(FirstLatLngsData[1]);
+
+                Log.e("Sorted ArrayList ", "-----FirstLatitude :" + FirstLatitude);
+                Log.e("Sorted ArrayList ", "-----FirstLongitude" + FirstLongitude);
+                // String[] SecondCordinateArray = SecondCordinate.split("#");
+                //  Log.e("Sorted ArrayList ", "in Ascending order ---AT 2--- :" + SecondCordinateArray[0]);
+                String Second= SecondCordinate.replace("lat/lng: (","");
+                Second= Second.replace(")","");
+                String[] SecondLatLngsData=Second.split(",");
+                double SecondLatitude= Double.valueOf(SecondLatLngsData[0]);
+                double SecondLongitude= Double.valueOf(SecondLatLngsData[1]);
+
+                Log.e("Sorted ArrayList ", "-----SecondLatitude :" + SecondLatitude);
+                Log.e("Sorted ArrayList ", "-----SecondLongitude" + SecondLongitude);
+                double x= currentGpsPosition.longitude;
+                double y= currentGpsPosition.longitude;
+                int value = (int)x;
+                int value1 = (int)y;
+                LatLng source=new LatLng(FirstLongitude,FirstLatitude);
+                LatLng destination=new LatLng(SecondLongitude,SecondLatitude);
+                Log.e("EdgeSt Point", "End point" + DestinationPosition);
+                    nearestPositionPoint= findNearestPoint(currentGpsPosition,source,destination);
+                    nearestPointValuesList.add(nearestPositionPoint);
+                    if(currentGpsPosition.equals(LatLngDataArray.get(LatLngDataArray.size()-1))){
+                        nearestPointValuesList.add(DestinationPosition);
+                    }
+            }
+        }
+        startTime=System.currentTimeMillis();
+        sendTokenRequest();
+        Log.e("startTime","StartTime"+startTime);
+
+        Log.e("EdgeSt Point", "End point" + LatLngDataArray.size());
+        CameraPosition googlePlex = CameraPosition.builder()
+                .target(nearestPositionPoint)
+                .zoom(25)
+                .tilt(45)
+                .build();
+        mMap.animateCamera(CameraUpdateFactory.newCameraPosition(googlePlex), 1000, null);
+        mPositionMarker = mMap.addMarker(new MarkerOptions()
+                .position(nearestPositionPoint)
+                .title("currentLocation")
+                .icon(bitmapDescriptorFromVector(getContext(), R.drawable.red_marker_24)));
+        //  Log.e("Route Deviation ---","Route Deviation "+routeDeviationDistance);
+        //  verifyRouteDeviation(routeDeviationDistance);
+        Log.e("NEAREST POSITION---","NEAREST POSITION POINT "+ nearestPositionPoint);
+        if(nearestPointValuesList.size()>1) {
+            //  Log.e("NEAREST POSITION---","NEAREST Source Position ------ "+ nearestPointValuesList.get(0));
+            //  Log.e("NEAREST POSITION---","NEAREST Destination Position ------- "+  nearestPointValuesList.get(1));
+            animateCarMove(mPositionMarker, nearestPointValuesList.get(0), nearestPointValuesList.get(1), 10000);
+
+        }
+    }
+
+     */
 }

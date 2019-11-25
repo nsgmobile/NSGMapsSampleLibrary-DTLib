@@ -1,4 +1,4 @@
-package com.nsg.nsgmapslibrary.SupportClasses;
+package com.nsg.nsgmapslibrary.Classes;
 
 import android.animation.ValueAnimator;
 import android.content.Context;

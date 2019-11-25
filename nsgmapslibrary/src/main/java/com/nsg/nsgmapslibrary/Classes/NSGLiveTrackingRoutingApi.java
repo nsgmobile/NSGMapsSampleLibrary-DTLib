@@ -680,7 +680,7 @@ public class NSGLiveTrackingRoutingApi extends Fragment implements GoogleMap.Can
         //  animateMarkerToFinalDestination(mPositionMarker,DestinationPosition,new LatLngInterpolator.Spherical());
         // animateMarker(mMap,mPositionMarker,LatLngDataArray,false);
         // animateMarkerViaVertex(mPositionMarker,new LatLngInterpolator.Spherical());
-        // animateMarkerNew(newCenterLatLng,mPositionMarker);
+       // animateMarkerNew(newCenterLatLng,mPositionMarker);
         animateCarMove(mPositionMarker, nearestPointValuesList.get(0), nearestPointValuesList.get(1), 1000);
 
     }

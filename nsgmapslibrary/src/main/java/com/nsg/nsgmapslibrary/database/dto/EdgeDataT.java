@@ -10,7 +10,7 @@ import java.util.ArrayList;
  */
 public class EdgeDataT {
     private Integer sid;
-    private String edgeNo;
+    private Integer edgeNo;
     private String startPoint;
     private String endPoint;
     private String message;
@@ -24,27 +24,42 @@ public class EdgeDataT {
     private String geometryText;
     private String allPoints;
     private String distanceInVertex;
+    private String positionMarkingPoint;
 
     public static ArrayList<DatabaseColumn> MAPPING = new ArrayList<DatabaseColumn>();
     public static String TABLE_NAME = "EdgeDataT";    static{
 
         MAPPING.add(new DatabaseColumn("sid", "setSid",true,true,false,"int"));
-        MAPPING.add(new DatabaseColumn("edgeNo", "setEdgeNo",false,false,true,"text"));
+        MAPPING.add(new DatabaseColumn("edgeNo", "setEdgeNo",false,false,true,"int"));
         MAPPING.add(new DatabaseColumn("startPoint", "setStartPoint",false,false,true,"text"));
         MAPPING.add(new DatabaseColumn("endPoint", "setEndPoint",false,false,true,"text"));
         MAPPING.add(new DatabaseColumn("allPoints", "setAllPoints",false,false,true,"text"));
         MAPPING.add(new DatabaseColumn("distanceInVertex", "setDistanceInVertex",false,false,true,"text"));
         MAPPING.add(new DatabaseColumn("geometryText", "setGeometryText",false,false,true,"text"));
+        MAPPING.add(new DatabaseColumn("positionMarkingPoint", "setPositionMarkingPoint",false,false,true,"text"));
 
     }
     public EdgeDataT(){}
-    public EdgeDataT(String edgeNo, String startPoint , String endPoint,String allPoints,String distanceInVertex,String geometryText ){
+    public EdgeDataT(Integer edgeNo, String startPoint , String endPoint,String allPoints,String distanceInVertex,String geometryText ){
 
         this.edgeNo=edgeNo;
         this.startPoint=startPoint;
         this.endPoint=endPoint;
         this.allPoints=allPoints;
         this.distanceInVertex=distanceInVertex;
+        this.geometryText=geometryText;
+    }
+    public EdgeDataT(Integer edgeNo,String allPoints,String geometryText ){
+
+        this.edgeNo=edgeNo;
+        this.allPoints=allPoints;
+        this.geometryText=geometryText;
+    }
+
+    public EdgeDataT(String distanceInVertex,String positionMarkingPoint,String geometryText ){
+
+        this.distanceInVertex=distanceInVertex;
+        this.positionMarkingPoint=positionMarkingPoint;
         this.geometryText=geometryText;
     }
 
@@ -56,11 +71,11 @@ public class EdgeDataT {
         this.sid = sid;
     }
 
-    public String getEdgeNo() {
+    public Integer getEdgeNo() {
         return edgeNo;
     }
 
-    public void setEdgeNo(String edgeNo) {
+    public void setEdgeNo(Integer edgeNo) {
         this.edgeNo = edgeNo;
     }
 
@@ -102,5 +117,77 @@ public class EdgeDataT {
 
     public void setGeometryText(String geometryText) {
         this.geometryText = geometryText;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public String getTotaldistance() {
+        return totaldistance;
+    }
+
+    public void setTotaldistance(String totaldistance) {
+        this.totaldistance = totaldistance;
+    }
+
+    public String getLatitute() {
+        return latitute;
+    }
+
+    public void setLatitute(String latitute) {
+        this.latitute = latitute;
+    }
+
+    public String getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(String longitude) {
+        this.longitude = longitude;
+    }
+
+    public String getTimeDuration() {
+        return timeDuration;
+    }
+
+    public void setTimeDuration(String timeDuration) {
+        this.timeDuration = timeDuration;
+    }
+
+    public String getGeometryType() {
+        return geometryType;
+    }
+
+    public void setGeometryType(String geometryType) {
+        this.geometryType = geometryType;
+    }
+
+    public String getGeometry() {
+        return geometry;
+    }
+
+    public void setGeometry(String geometry) {
+        this.geometry = geometry;
+    }
+
+    public String getPositionMarkingPoint() {
+        return positionMarkingPoint;
+    }
+
+    public void setPositionMarkingPoint(String positionMarkingPoint) {
+        this.positionMarkingPoint = positionMarkingPoint;
     }
 }

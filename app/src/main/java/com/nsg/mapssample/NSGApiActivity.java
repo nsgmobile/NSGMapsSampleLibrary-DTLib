@@ -1,28 +1,22 @@
 package com.nsg.mapssample;
 
-import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
-import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import com.nsg.nsgmapslibrary.Classes.HomeFragment;
-import com.nsg.nsgmapslibrary.Classes.NSGLiveTrackingRoutingApiClass1;
+import com.nsg.nsgmapslibrary.Classes.MainFragment;
 import com.nsg.nsgmapslibrary.Classes.NSGLiveTrackingRoutingApiClass2;
 import com.nsg.nsgmapslibrary.Classes.NSGLiveTrackingRoutingApiClass3;
-
-import java.util.ArrayList;
+import com.nsg.nsgmapslibrary.Classes.NSGRoutingDirectionApi;
 
 /**
  * Created by sailaja.ch NSGI on 27/09/2019
  */
-public class NSGApiActivity extends FragmentActivity implements HomeFragment.FragmentToActivity{
+public class NSGApiActivity extends FragmentActivity implements MainFragment.FragmentToActivity{
     //implements HomeFragment.FragmentToActivity{
-
     private double srcLatitude;
     private double srcLongitude;
     private double destLatitude;
@@ -32,7 +26,7 @@ public class NSGApiActivity extends FragmentActivity implements HomeFragment.Fra
     private String charlsisNumber;
     String SourcePosition="";
     String DestinationPosition="";
-    private TextView tv1;
+    private TextView tv;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -50,7 +44,7 @@ public class NSGApiActivity extends FragmentActivity implements HomeFragment.Fra
             enteredMode = NSGIBundle.getInt("enteredMode");
             bufferSize = NSGIBundle.getInt("bufferSize");
             Log.e("Route Details------", " Route Details------ " +" srcLatitude : "+ srcLatitude +"\n"+" srcLongitude : "+ srcLongitude +"\n"+" destLatitude : "+destLatitude+"\n"+" desLongitude : "+desLongitude+"\n");
-            fragmentTransaction.add(R.id.map_container, new HomeFragment(srcLatitude,srcLongitude,destLatitude,desLongitude,enteredMode,bufferSize));//getRoutes Direction
+            fragmentTransaction.add(R.id.map_container, new MainFragment(srcLatitude,srcLongitude,destLatitude,desLongitude,1,bufferSize));//getRoutes Direction
             //fragmentTransaction.add(R.id.map_container, new HomeFragment());
          }
          if(charlsisNumber.equals("1HGBH41JXMN109186")) {
@@ -76,19 +70,12 @@ public class NSGApiActivity extends FragmentActivity implements HomeFragment.Fra
         }
         fragmentTransaction.commit();
     }
-
-
     @Override
     public String communicate(String comm) {
-        Log.d("received", "Recieved---"+ comm);
-        // tv=(TextView)findViewById(R.id.tv);
-        // tv.setText(comm);
-        /*
-        AlertDialog alertDialog = new AlertDialog.Builder(NSGApiActivity.this).create();
-        alertDialog.setTitle("Alert");
-        alertDialog.setMessage(comm);
+        Log.d("received", "Recieved From ETA Listener---"+ comm);
+         tv=(TextView)findViewById(R.id.tv);
+         tv.setText(comm);
 
-        alertDialog.show(); */
         //tv1=(TextView)findViewById(R.id.text1);
       //  tv1.setText(comm);
         return comm;

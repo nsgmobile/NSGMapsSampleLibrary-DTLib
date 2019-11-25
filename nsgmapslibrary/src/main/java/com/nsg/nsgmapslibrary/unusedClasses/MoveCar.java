@@ -192,7 +192,7 @@ public class MoveCar  extends AppCompatActivity {
         }
     }
 
-    private interface LatLngInterpolatorNew {
+    public interface LatLngInterpolatorNew {
         LatLng interpolate(float fraction, LatLng a, LatLng b);
 
         class LinearFixed implements LatLngInterpolatorNew {

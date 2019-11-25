@@ -16,9 +16,9 @@
         <item name="android:textColorPrimary">#d14040</item>
         <!-- Used for the background -->
         <item name="android:background">#ffffff</item>
-        <item name="android:textStyle">bold</item>
+        <item name="android:textStyle">normal</item>
         <item name="android:maxLines">1</item>
-        <item name="android:textSize">25dp</item>
+        <item name="android:textSize">20dp</item>
     </style>
 
 

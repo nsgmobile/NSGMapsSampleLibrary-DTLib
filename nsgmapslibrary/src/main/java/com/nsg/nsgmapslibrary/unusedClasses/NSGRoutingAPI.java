@@ -5,11 +5,8 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
-import android.app.Notification;
-import android.app.NotificationManager;
 import android.app.ProgressDialog;
 import android.content.Context;
-import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.database.Cursor;
@@ -39,14 +36,12 @@ import android.view.ViewGroup;
 import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.Interpolator;
 import android.view.animation.LinearInterpolator;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
-import com.google.android.gms.maps.Projection;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
@@ -64,7 +59,6 @@ import com.google.android.gms.maps.model.TileProvider;
 import com.google.maps.android.SphericalUtil;
 import com.nsg.nsgmapslibrary.Classes.ExpandedMBTilesTileProvider;
 import com.nsg.nsgmapslibrary.R;
-import com.nsg.nsgmapslibrary.SupportClasses.CarMoveAnim;
 import com.nsg.nsgmapslibrary.SupportClasses.ETACalclator;
 import com.nsg.nsgmapslibrary.SupportClasses.Util;
 import com.nsg.nsgmapslibrary.database.db.SqlHandler;
@@ -89,10 +83,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 //https://stackoverflow.com/questions/40526350/how-to-move-marker-along-polyline-using-google-map
 public class NSGRoutingAPI extends Fragment implements GoogleMap.CancelableCallback{
@@ -305,7 +296,7 @@ public class NSGRoutingAPI extends Fragment implements GoogleMap.CancelableCallb
                             .title("currentLocation")
                             .icon(bitmapDescriptorFromVector(getContext(), R.drawable.car_icon_32)));
                     //verifyRouteDeviation(routeDeviationDistance);
-                    //  animateMarkerToFinalDestination(mPositionMarker,DestinationPosition,new LatLngInterpolator.Spherical());
+                      animateMarkerToFinalDestination(mPositionMarker,DestinationPosition,new LatLngInterpolator.Spherical());
                     // animateMarker(mMap,mPositionMarker,LatLngDataArray,false);
                     // animateMarkerViaVertex(mPositionMarker,new LatLngInterpolator.Spherical());
                     // animateMarkerNew(newCenterLatLng,mPositionMarker);

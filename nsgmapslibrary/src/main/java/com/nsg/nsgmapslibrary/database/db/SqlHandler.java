@@ -18,7 +18,7 @@ import java.util.List;
 public class SqlHandler {
 
 	public static final String DATABASE_NAME = "DUBAI_PORTS_DB";
-	public static final int DATABASE_VERSION = 2;
+	public static final int DATABASE_VERSION = 5;
 	Context context;
 	SQLiteDatabase sqlDatabase;
 	SqlDbHelper dbHelper;

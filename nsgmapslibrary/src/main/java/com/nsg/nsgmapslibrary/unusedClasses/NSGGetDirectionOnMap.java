@@ -10,6 +10,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
+import android.graphics.Point;
 import android.graphics.drawable.Drawable;
 import android.location.Address;
 import android.location.Criteria;
@@ -39,6 +40,7 @@ import android.widget.Toast;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.Projection;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
@@ -122,26 +124,6 @@ public class NSGGetDirectionOnMap extends Fragment implements LocationListener ,
 
 
     }
-
-    /*
-    public static NSGGetDirectionOnMap newInstance(LatLng Source, LatLng destination) {
-        Bundle bundle = new Bundle();
-        bundle.putParcelable("Source",Source);
-        bundle.putParcelable("Destination",destination);
-
-        NSGGetDirectionOnMap fragment = new NSGGetDirectionOnMap();
-        fragment.setArguments(bundle);
-
-        return fragment;
-    }
-
-    private void readBundle(Bundle bundle) {
-        if (bundle != null) {
-           bundle.getParcelable("Source");
-           bundle.getParcelable("Destination");
-        }
-    }
-    */
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -162,9 +144,6 @@ public class NSGGetDirectionOnMap extends Fragment implements LocationListener ,
         String provider = locationManager.getBestProvider(criteria, true);
         currentLocation = locationManager.getLastKnownLocation(provider);
         locationManager.requestLocationUpdates(provider, 1000, 0  , this);
-
-
-
     }
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -176,12 +155,7 @@ public class NSGGetDirectionOnMap extends Fragment implements LocationListener ,
             @Override
             public void onMapReady(GoogleMap googlemap) {
                 mMap=googlemap;
-                mMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
-                mMap.clear(); //clear old markers
-                // Routes 24.989044, 55.063247  to 25.016036, 54.982303
-
-               // 55.063247,24.989044
-                mMap.clear(); //clear old markers
+                mMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
                 dubai =new LatLng(24.989044,55.063247);
                 CameraPosition googlePlex = CameraPosition.builder()
                         .target(new LatLng(24.989044,55.063247))
@@ -201,14 +175,14 @@ public class NSGGetDirectionOnMap extends Fragment implements LocationListener ,
                         .position(SourcePosition)
                         .title("United Arab Emirates").snippet("DP World")
                         .icon(bitmapDescriptorFromVector(getActivity(),R.drawable.boat_marker)));
-              //  animateMarkerToFinalDestination(marker, latLng, new LatLngInterpolator.Spherical());
+              // animateMarkerToFinalDestination(marker, latLng, new LatLngInterpolator.Spherical());
 
              ///   CarMoveAnim.startcarAnimation(marker,mMap, SourcePosition,DestinationPosition,3000,callback);
 
                // showMarker(currentLocation);
-              //  animateCamera(currentLocation);
+              // animateCamera(currentLocation);
 
-               animateMarkerToFinalDestination(marker,DestinationPosition,new LatLngInterpolator.Spherical());
+               //animateMarkerToFinalDestination(marker,DestinationPosition,new LatLngInterpolator.Spherical());
                animateCarMove(marker,SourcePosition,DestinationPosition,1000);
 
 
@@ -655,42 +629,41 @@ public class NSGGetDirectionOnMap extends Fragment implements LocationListener ,
 
 
     }
-    public  void animateMarkerToFinalDestination(final Marker marker, final LatLng finalPosition, final LatLngInterpolator latLngInterpolator) {
-        final LatLng startPosition = marker.getPosition();
+    private void animateMarker(final Marker marker, final LatLng toPosition,
+                               final boolean hideMarker) {
         final Handler handler = new Handler();
         final long start = SystemClock.uptimeMillis();
-        final Interpolator interpolator = new AccelerateDecelerateInterpolator();
-        final float durationInMs = 2000;
+        Projection proj = mMap.getProjection();
+        Point startPoint = proj.toScreenLocation(marker.getPosition());
+        final LatLng startLatLng = proj.fromScreenLocation(startPoint);
+        final long duration = 1000;
 
+        final Interpolator interpolator = new LinearInterpolator();
         handler.post(new Runnable() {
-            long elapsed;
-            float t;
-            float v;
-
             @Override
             public void run() {
-                // Calculate progress using interpolator
-                elapsed = SystemClock.uptimeMillis() - start;
-                t = elapsed / durationInMs;
-                v = interpolator.getInterpolation(t);
+                long elapsed = SystemClock.uptimeMillis() - start;
+                float t = interpolator.getInterpolation((float) elapsed
+                        / duration);
+                double lng = t * toPosition.longitude + (1 - t)
+                        * startLatLng.longitude;
+                double lat = t * toPosition.latitude + (1 - t)
+                        * startLatLng.latitude;
+                marker.setPosition(new LatLng(lat, lng));
 
-                marker.setPosition(latLngInterpolator.interpolate(v, startPosition, finalPosition));
-                Double lat=marker.getPosition().latitude;
-                Double longi= marker.getPosition().longitude;
-                mMap.addMarker(new MarkerOptions()
-                        .position(new LatLng(lat,longi))
-                        .title("Moving Marker ").snippet(" Moving Marker ")
-                        .icon(bitmapDescriptorFromVector(getActivity(),R.drawable.circle_pink)));
-                Log.e("Location Moving Matrker","NEW MARKER OF CAR ------------"+ marker.getPosition()+ marker.getSnippet());
-                // Repeat till progress is complete.
-                if (t < 1) {
-                    // Post again 10ms later.
-                    handler.postDelayed(this, 10);
+                if (t < 1.0) {
+                    // Post again 16ms later.
+                    handler.postDelayed(this, 16);
+                } else {
+                    if (hideMarker) {
+                        marker.setVisible(false);
+                    } else {
+                        marker.setVisible(true);
+                    }
                 }
             }
         });
-    }
-    private void animateCamera(@NonNull Location location) {
+    }    private void animateCamera(@NonNull Location location) {
         LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
         mMap.animateCamera(CameraUpdateFactory.newCameraPosition(getCameraPositionWithBearing(latLng)));
     }
@@ -704,9 +677,9 @@ public class NSGGetDirectionOnMap extends Fragment implements LocationListener ,
         LatLng latLng = new LatLng(currentLocation.getLatitude(), currentLocation.getLongitude());
         if (marker == null)
             marker = mMap.addMarker(new MarkerOptions().icon(BitmapDescriptorFactory.defaultMarker()).position(latLng));
-        else
-            animateMarkerToFinalDestination(marker, latLng, new LatLngInterpolator.Spherical());
-
+        else {
+            //animateMarkerToFinalDestination(marker, latLng, new LatLngInterpolator.Spherical());
+        }
     }
 
  /*
