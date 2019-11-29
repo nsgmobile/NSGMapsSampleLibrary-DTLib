@@ -40,12 +40,11 @@ public class EdgeDataT {
 
     }
     public EdgeDataT(){}
-    public EdgeDataT(Integer edgeNo, String startPoint , String endPoint,String allPoints,String distanceInVertex,String geometryText ){
+    public EdgeDataT( String startPoint , String endPoint,String positionMarkingPoint,String geometryText,String distanceInVertex ){
 
-        this.edgeNo=edgeNo;
         this.startPoint=startPoint;
         this.endPoint=endPoint;
-        this.allPoints=allPoints;
+        this.positionMarkingPoint=positionMarkingPoint;
         this.distanceInVertex=distanceInVertex;
         this.geometryText=geometryText;
     }

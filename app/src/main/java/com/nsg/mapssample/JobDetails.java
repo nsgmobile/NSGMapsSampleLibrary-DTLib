@@ -59,7 +59,7 @@ public class JobDetails extends Activity {
             public void onClick(View view) {
                 Log.e("SpinnerDT :", " Selected Item From SpinnerDT " + charlsisNumber);
              //   if (charlsisNumber.isEmpty()) {
-                    if (charlsisNumber.equals("1HGBH41JXMN109185")) {
+                    if (charlsisNumber.equals("RD1")) {
                         double srcLatitude=55.067291;
                         double srcLongitude=24.978782;
                         double destLatitude=55.067205;
@@ -74,7 +74,7 @@ public class JobDetails extends Activity {
 
                         Intent NSGIIntent = new Intent(JobDetails.this, NSGApiActivity.class);
                         Bundle NSGIBundle = new Bundle();
-                        NSGIBundle.putString("charlsisNumber", "1HGBH41JXMN109185");
+                        NSGIBundle.putString("charlsisNumber", "RD1");
                         NSGIBundle.putDouble("srcLatitude", srcLatitude);
                         NSGIBundle.putDouble("srcLongitude", srcLongitude);
                         NSGIBundle.putDouble("destLatitude", destLatitude);
@@ -83,14 +83,14 @@ public class JobDetails extends Activity {
                         NSGIBundle.putInt("bufferSize", bufferSize);
                         NSGIIntent.putExtras(NSGIBundle);
                         startActivity(NSGIIntent);
-                    } else if (charlsisNumber.equals("1HGBH41JXMN109186")) {
+                    } else if (charlsisNumber.equals("RD2")) {
                         Intent NSGIIntent = new Intent(JobDetails.this, NSGApiActivity.class);
                         double srcLatitude = 55.076897;
                         double srcLongitude = 24.989081;
                         double destLatitude = 55.077639;
                         double desLongitude = 24.988377;
                         Bundle NSGIBundle = new Bundle();
-                        NSGIBundle.putString("charlsisNumber", "1HGBH41JXMN109186");
+                        NSGIBundle.putString("charlsisNumber", "RD2");
                         NSGIBundle.putDouble("srcLatitude", srcLatitude);
                         NSGIBundle.putDouble("srcLongitude", srcLongitude);
                         NSGIBundle.putDouble("destLatitude", destLatitude);
@@ -99,7 +99,7 @@ public class JobDetails extends Activity {
                         NSGIBundle.putInt("bufferSize", bufferSize);
                         NSGIIntent.putExtras(NSGIBundle);
                         startActivity(NSGIIntent);
-                    } else if (charlsisNumber.equals("1HGBH41JXMN109187")) {
+                    } else if (charlsisNumber.equals("RD3")) {
                         double srcLatitude = 55.066921;
                         double srcLongitude = 24.978488;
                         double destLatitude = 55.070077;
@@ -107,7 +107,7 @@ public class JobDetails extends Activity {
 
                         Intent NSGIIntent = new Intent(JobDetails.this, NSGApiActivity.class);
                         Bundle NSGIBundle = new Bundle();
-                        NSGIBundle.putString("charlsisNumber", "1HGBH41JXMN109187");
+                        NSGIBundle.putString("charlsisNumber", "RD3");
                         NSGIBundle.putDouble("srcLatitude", srcLatitude);
                         NSGIBundle.putDouble("srcLongitude", srcLongitude);
                         NSGIBundle.putDouble("destLatitude", destLatitude);

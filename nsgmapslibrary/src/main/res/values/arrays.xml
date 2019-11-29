@@ -3,9 +3,8 @@
 
     <string-array name="Spinner_Ch_Number">
         <item>--SELECT--</item>
-        <item>1HGBH41JXMN109185</item>
-        <item>1HGBH41JXMN109186</item>
-        <item>1HGBH41JXMN109187</item>
+        <item>RD1</item>
+        <item>RD2</item>
     </string-array>
 
 </resources>

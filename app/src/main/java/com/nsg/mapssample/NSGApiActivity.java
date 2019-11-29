@@ -1,6 +1,9 @@
 package com.nsg.mapssample;
 
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
+import android.support.annotation.RequiresApi;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
@@ -8,9 +11,12 @@ import android.util.Log;
 import android.widget.TextView;
 
 import com.nsg.nsgmapslibrary.Classes.MainFragment;
+import com.nsg.nsgmapslibrary.Classes.MainMapFragment;
 import com.nsg.nsgmapslibrary.Classes.NSGLiveTrackingRoutingApiClass2;
 import com.nsg.nsgmapslibrary.Classes.NSGLiveTrackingRoutingApiClass3;
 import com.nsg.nsgmapslibrary.Classes.NSGRoutingDirectionApi;
+
+import java.io.File;
 
 /**
  * Created by sailaja.ch NSGI on 27/09/2019
@@ -24,9 +30,12 @@ public class NSGApiActivity extends FragmentActivity implements MainFragment.Fra
     private int enteredMode;
     private int bufferSize=30;
     private String charlsisNumber;
+    private String jobId="1",routeId;
     String SourcePosition="";
     String DestinationPosition="";
     private TextView tv;
+    String BASE_MAP_URL_FORMAT = Environment.getExternalStorageDirectory() + File.separator + "MBTILES" + File.separator + "DubaiBasemap" + ".mbtiles";
+    String CSVFile_Path= Environment.getExternalStorageDirectory() + File.separator + "MBTILES" + File.separator + "RouteSample"+".csv";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -36,37 +45,24 @@ public class NSGApiActivity extends FragmentActivity implements MainFragment.Fra
         charlsisNumber = NSGIBundle.getString("charlsisNumber");
         FragmentManager fragmentManager = getSupportFragmentManager();
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-         if( charlsisNumber.equals("1HGBH41JXMN109185")) {
-            srcLatitude = NSGIBundle.getDouble("srcLatitude");
-            srcLongitude = NSGIBundle.getDouble("srcLongitude");
-            destLatitude = NSGIBundle.getDouble("destLatitude");
-            desLongitude = NSGIBundle.getDouble("desLongitude");
-            enteredMode = NSGIBundle.getInt("enteredMode");
-            bufferSize = NSGIBundle.getInt("bufferSize");
-            Log.e("Route Details------", " Route Details------ " +" srcLatitude : "+ srcLatitude +"\n"+" srcLongitude : "+ srcLongitude +"\n"+" destLatitude : "+destLatitude+"\n"+" desLongitude : "+desLongitude+"\n");
-            fragmentTransaction.add(R.id.map_container, new MainFragment(srcLatitude,srcLongitude,destLatitude,desLongitude,1,bufferSize));//getRoutes Direction
-            //fragmentTransaction.add(R.id.map_container, new HomeFragment());
-         }
-         if(charlsisNumber.equals("1HGBH41JXMN109186")) {
-            srcLatitude = NSGIBundle.getDouble("srcLatitude");
-            srcLongitude = NSGIBundle.getDouble("srcLongitude");
-            destLatitude = NSGIBundle.getDouble("destLatitude");
-            desLongitude = NSGIBundle.getDouble("desLongitude");
-            enteredMode = NSGIBundle.getInt("enteredMode");
-            bufferSize = NSGIBundle.getInt("bufferSize");
-            Log.e("Route Details------", " Route Details------ " +" srcLatitude : "+ srcLatitude +"\n"+" srcLongitude : "+ srcLongitude +"\n"+" destLatitude : "+destLatitude+"\n"+" desLongitude : "+desLongitude+"\n");
-            fragmentTransaction.add(R.id.map_container, new NSGLiveTrackingRoutingApiClass2(srcLatitude,srcLongitude,destLatitude,desLongitude,enteredMode,bufferSize));//getRoutes Direction
+         if(charlsisNumber.equals("RD1")) {
 
-        }
-        else if( charlsisNumber.equals("1HGBH41JXMN109187")) {
-            srcLatitude = NSGIBundle.getDouble("srcLatitude");
-            srcLongitude = NSGIBundle.getDouble("srcLongitude");
-            destLatitude = NSGIBundle.getDouble("destLatitude");
-            desLongitude = NSGIBundle.getDouble("desLongitude");
+             double srcLatitude=55.067291;
+             double srcLongitude=24.978782;
+             double destLatitude=55.067205;
+             double desLongitude=24.979878;
+            routeId="RD1";
+            enteredMode = NSGIBundle.getInt("enteredMode");
+            bufferSize = NSGIBundle.getInt("bufferSize");
+            // fragmentTransaction.add(R.id.map_container, new MainMapFragment(srcLatitude,srcLongitude,destLatitude,desLongitude,1,bufferSize));//getRoutes Direction
+            fragmentTransaction.add(R.id.map_container, new MainFragment(BASE_MAP_URL_FORMAT,CSVFile_Path,jobId,"RD1",1,bufferSize));//getRoutes Direction
+        }else if(charlsisNumber.equals("RD2")) {
+            routeId="RD2";
             enteredMode = NSGIBundle.getInt("enteredMode");
             bufferSize = NSGIBundle.getInt("bufferSize");
             Log.e("Route Details------", " Route Details------ " +" srcLatitude : "+ srcLatitude +"\n"+" srcLongitude : "+ srcLongitude +"\n"+" destLatitude : "+destLatitude+"\n"+" desLongitude : "+desLongitude+"\n");
-            fragmentTransaction.add(R.id.map_container, new NSGLiveTrackingRoutingApiClass3(srcLatitude,srcLongitude,destLatitude,desLongitude,enteredMode,bufferSize));//getRoutes Direction
+            fragmentTransaction.add(R.id.map_container, new NSGLiveTrackingRoutingApiClass2(BASE_MAP_URL_FORMAT,CSVFile_Path,jobId,"RD2",enteredMode,bufferSize));//getRoutes Direction
+
         }
         fragmentTransaction.commit();
     }

@@ -47,6 +47,7 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.CircleOptions;
+import com.google.android.gms.maps.model.JointType;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
@@ -66,6 +67,7 @@ import com.nsg.nsgmapslibrary.SupportClasses.ETACalclator;
 import com.nsg.nsgmapslibrary.SupportClasses.Util;
 import com.nsg.nsgmapslibrary.database.db.SqlHandler;
 import com.nsg.nsgmapslibrary.database.dto.EdgeDataT;
+import com.nsg.nsgmapslibrary.database.dto.RouteT;
 import com.nsg.nsgmapslibrary.interfaces.ILoadTiles;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -79,10 +81,16 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+
+import de.siegmar.fastcsv.reader.CsvParser;
+import de.siegmar.fastcsv.reader.CsvReader;
+import de.siegmar.fastcsv.reader.CsvRow;
+
 public class NSGLiveTrackingRoutingApiClass2 extends Fragment implements GoogleMap.CancelableCallback,View.OnClickListener{
     LatLng SourcePosition, DestinationPosition;
     //LatLng convertedSrcPosition,convertedDestinationPoisition;
@@ -135,31 +143,27 @@ public class NSGLiveTrackingRoutingApiClass2 extends Fragment implements GoogleM
     private String MESSAGE;
     private ToggleButton fakeGpsListener;
     Marker fakeGpsMarker;
+    private String BASE_MAP_URL_FORMAT,DBCSV_PATH,jobId,routeIDName;
     List<Marker> markerlist;
-
-
+    private List<RouteT> RouteDataList;
     public NSGLiveTrackingRoutingApiClass2() {
         // Required empty public constructor
     }
     @SuppressLint("ValidFragment")
-    public NSGLiveTrackingRoutingApiClass2(double v1, double v2, double v3, double v4,int mode,int radius ) {
-        //get Cordinates from MainActivity
-        SourcePosition = new LatLng(v1, v2);
-        DestinationPosition = new LatLng(v4, v3);
-        sourceLat = v2;
-        sourceLng = v1;
-        destLat = v4;
-        destLng =v3;
+    public NSGLiveTrackingRoutingApiClass2(String BASE_MAP_URL_FORMAT,String DBCSV_PATH,String jobId,String routeId, int mode, int radius ) {
         enteredMode = mode;
         routeDeviationDistance=radius;
-        SourcePoint=String.valueOf(v1).concat(" ").concat(String.valueOf(v2));
-        DestinationPoint=String.valueOf(v3).concat(" ").concat(String.valueOf(v4));
+        NSGLiveTrackingRoutingApiClass2.this.BASE_MAP_URL_FORMAT = BASE_MAP_URL_FORMAT;
+        NSGLiveTrackingRoutingApiClass2.this.DBCSV_PATH = DBCSV_PATH;
+        NSGLiveTrackingRoutingApiClass2.this.routeIDName=routeId;
+        NSGLiveTrackingRoutingApiClass2.this.jobId=jobId;
     }
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         sqlHandler = new SqlHandler(getContext());
     }
+    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -169,6 +173,7 @@ public class NSGLiveTrackingRoutingApiClass2 extends Fragment implements GoogleM
         tv=(TextView)rootView.findViewById(R.id.tv);
         tv1=(TextView)rootView.findViewById(R.id.tv1);
         tv2=(TextView)rootView.findViewById(R.id.tv2);
+        InsertAllRouteData(DBCSV_PATH);
         fakeGpsListener=(ToggleButton)rootView.findViewById(R.id.fakeGps);
         fakeGpsListener.setOnClickListener(this);
         SupportMapFragment mapFragment = (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.frg);  //use SuppoprtMapFragment for using in fragment instead of activity  MapFragment1 = activity   SupportMapFragment = fragment
@@ -186,88 +191,11 @@ public class NSGLiveTrackingRoutingApiClass2 extends Fragment implements GoogleM
                 tileOverlay.setVisible(true);
                 mMap.setBuildingsEnabled(true);
                 mMap.setBuildingsEnabled(true);
-                /*
-                Polygon polygon = mMap.addPolygon(new PolygonOptions()
-                        .add(   new LatLng(24.997631202047927,55.07903607176733),
-                                new LatLng(24.994943800450407,55.08188145253859),
-                                new LatLng(24.97188040995721,55.05534878834661),
-                                new LatLng(24.974253804379885,55.052859097191366),
-                                new LatLng(24.97333303087801,55.051774176738625),
-                                new LatLng(24.975922876821002,55.04905955187892),
-                                new LatLng(24.97686569894065,55.05012017041875),
-                                new LatLng(24.977013208550122,55.04999522736928),
-                                new LatLng(24.98105413788837,55.054525318253745),
-                                new LatLng(24.981239546680065,55.05459527344463),
-                                new LatLng(24.986517227672824,55.05239502998611),
-                                new LatLng(24.988904885932133,55.05771226137448),
-                                new LatLng(24.988855585254097,55.0577091240746),
-                                new LatLng(24.98882002682904,55.057734217250925),
-                                new LatLng(24.981821286589813,55.06074200734972),
-                                new LatLng(24.982168190131457,55.061141878974404),
-                                new LatLng(24.98209526808512,55.061173181159056)
-                        )
-                        .strokeColor(Color.GRAY)
-                        .strokeWidth(2)
-                        .fillColor(getResources().getColor(R.color.colorWater)));
-                listOfLatLng=new ArrayList<>();
-                listOfLatLng.add(new LatLng(24.997631202047927,55.07903607176733));
-                listOfLatLng.add(        new LatLng(24.994943800450407,55.08188145253859));
-                listOfLatLng.add(        new LatLng(24.97188040995721,55.05534878834661));
-                listOfLatLng.add(        new LatLng(24.974253804379885,55.052859097191366));
-                listOfLatLng.add(       new LatLng(24.97333303087801,55.051774176738625));
-                listOfLatLng.add(       new LatLng(24.975922876821002,55.04905955187892));
-                listOfLatLng.add(       new LatLng(24.97686569894065,55.05012017041875));
-                listOfLatLng.add(       new LatLng(24.977013208550122,55.04999522736928));
-                listOfLatLng.add(       new LatLng(24.98105413788837,55.054525318253745));
-                listOfLatLng.add(       new LatLng(24.981239546680065,55.05459527344463));
-                listOfLatLng.add(       new LatLng(24.986517227672824,55.05239502998611));
-                listOfLatLng.add(       new LatLng(24.988904885932133,55.05771226137448));
-                listOfLatLng.add(       new LatLng(24.988855585254097,55.0577091240746));
-                listOfLatLng.add(       new LatLng(24.98882002682904,55.057734217250925));
-                listOfLatLng.add(       new LatLng(24.981821286589813,55.06074200734972));
-                listOfLatLng.add(       new LatLng(24.982168190131457,55.061141878974404));
-                listOfLatLng.add(       new LatLng(24.98209526808512,55.061173181159056));
-
-                LatLngBounds.Builder builder = LatLngBounds.builder();
-                for(int i = 0 ; i < listOfLatLng.size() ; i++) {
-                    builder.include(listOfLatLng.get(i));
-                }
-                LatLngBounds bounds = builder.build();
-
-                BitmapDescriptor icon = BitmapDescriptorFactory.fromResource(R.drawable.water);
-
-                double boundHeight = bounds.northeast.latitude - bounds.southwest.latitude;
-                double boundWidth = bounds.northeast.longitude - bounds.southwest.longitude;
-
-                double gridCntLat = 1;  // 5 icons vertically
-                double gridCntLon = 1;  // 5 icons horizontally
-
-                double dLat = (bounds.northeast.latitude - bounds.southwest.latitude) / gridCntLat;
-                double dLng = (bounds.northeast.longitude - bounds.southwest.longitude) / gridCntLon;
-
-                double lat = dLat + bounds.southwest.latitude;
-
-                while (lat < bounds.northeast.latitude) {
-                    double lon = dLng + bounds.southwest.longitude;
-                    while (lon < bounds.northeast.longitude) {
-
-                        LatLng iconPos = new LatLng(lat, lon);
-
-                        if (PolyUtil.containsLocation(iconPos, listOfLatLng, true)) {
-                            MarkerOptions markerOptions = new MarkerOptions().position(iconPos)
-                                    .draggable(false)
-                                    .flat(true)
-                                    .icon(icon);
-                            mMap.addMarker(markerOptions);
-                        }
-                        lon += dLng;
-                    }
-                    lat += dLat;
-                }
-                */
-
-                if (Util.isInternetAvailable(getActivity()) == true && mMap != null && tileOverlay.isVisible()==true) {
-                    dialog = new ProgressDialog(getActivity(), R.style.ProgressDialog);
+                getRouteAccordingToRouteID();
+                RouteT route = RouteDataList.get(0);
+                String routeData = route.getRouteData();
+                GetRouteFromDBPlotOnMap(routeData);
+                dialog = new ProgressDialog(getActivity(), R.style.ProgressDialog);
                     dialog.setMessage("Fetching Route");
                     dialog.setMax(100);
                     dialog.show();
@@ -283,7 +211,7 @@ public class NSGLiveTrackingRoutingApiClass2 extends Fragment implements GoogleM
                                 if(enteredMode==1 &&edgeDataList!=null && edgeDataList.size()>0){
                                     MoveWithGpsPointInBetWeenAllPoints();
                                 }else if(enteredMode==2){
-                                    CalculateNearestViaFakeGPS();
+                                   // CalculateNearestViaFakeGPS();
                                 }
                             }else{
                                 dialog.dismiss();
@@ -291,10 +219,6 @@ public class NSGLiveTrackingRoutingApiClass2 extends Fragment implements GoogleM
                             }
                         }
                     }, 20);
-                } else {
-                    Toast.makeText(getActivity(), "please turn on wifi/mobiledata", Toast.LENGTH_LONG).show();
-                }
-
             }
         });
         return rootView;
@@ -968,6 +892,14 @@ public class NSGLiveTrackingRoutingApiClass2 extends Fragment implements GoogleM
             }
         });
     }
+    private  List<RouteT> getRouteAccordingToRouteID() {
+        String query = "SELECT * FROM " + RouteT.TABLE_NAME +" WHERE routeID = "+"'"+routeIDName+"'";
+        Log.e("Select","Select Query ------- "+ query);
+        Cursor c1 = sqlHandler.selectQuery(query);
+        RouteDataList = (List<RouteT>) SqlHandler.getDataRows(RouteT.MAPPING, RouteT.class, c1);
+        sqlHandler.closeDataBaseConnection();
+        return RouteDataList;
+    }
     private void nextMoveAnimation() {
         if (mIndexCurrentPoint < nearestPointValuesList.size() - 1) {
             double resultdistance=showDistance(nearestPointValuesList.get(mIndexCurrentPoint),new LatLng(destLat,destLng)); //in km
@@ -1241,6 +1173,153 @@ public class NSGLiveTrackingRoutingApiClass2 extends Fragment implements GoogleM
             }
         }
     }
+
+
+    @RequiresApi(api = Build.VERSION_CODES.KITKAT)
+    public void InsertAllRouteData(String DBCSV_PATH){
+        File file = new File(DBCSV_PATH);
+        Log.e(" Route CSV File From ", " generateCsvFile Method ---" + file);
+        CsvReader csvReader = new CsvReader();
+        csvReader.setContainsHeader(true);
+        try (CsvParser csvParser = csvReader.parse(file, StandardCharsets.UTF_8)) {
+            CsvRow row;
+            while ((row = csvParser.nextRow()) != null) {
+                System.out.println("Read line: " + row);
+                String ID=row.getField("ID");
+                String RouteID=row.getField("RouteID");
+                String startNode=row.getField("StartPoint");
+                String endNode=row.getField("EndPoint");
+                String routeData=row.getField("Route");
+
+                StringBuilder query = new StringBuilder("INSERT INTO ");
+                query.append(RouteT.TABLE_NAME).append("(routeID,startNode,endNode,routeData) values (")
+                        .append("'").append(RouteID).append("',")
+                        .append("'").append(startNode).append("',")
+                        .append("'").append(endNode).append("',")
+                        .append("'").append(routeData).append("')");
+                Log.e("INSERT QUERY","INSERT QUERY ------ "+query);
+                sqlHandler.executeQuery(query.toString());
+                sqlHandler.closeDataBaseConnection();
+
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+    public void GetRouteFromDBPlotOnMap(String FeatureResponse){
+        JSONObject jsonObject = null;
+        try {
+            if(FeatureResponse!=null){
+                String delQuery = "DELETE  FROM " + EdgeDataT.TABLE_NAME;
+                Log.e("DEL QUERY","DEL QUERY " + delQuery);
+                sqlHandler.executeQuery(delQuery.toString());
+                jsonObject = new JSONObject(FeatureResponse);
+                String ID = String.valueOf(jsonObject.get("$id"));
+                // MESSAGE = jsonObject.getString("Message");
+                String Status = jsonObject.getString("Status");
+                String TotalDistance = jsonObject.getString("TotalDistance");
+                JSONArray jSonRoutes = new JSONArray(jsonObject.getString("Route"));
+                // Log.e("jSonRoutes", "jSonRoutes" + jSonRoutes);
+                PolylineOptions polylineOptions = new PolylineOptions();
+                Polyline polyline = null;
+                convertedPoints=new ArrayList<LatLng>();
+                for (int i = 0; i < jSonRoutes.length(); i++) {
+                    points=new ArrayList();
+                    // Log.e("jSonRoutes", "jSonRoutes" + jSonRoutes.get(i));
+                    // List Routes=new ArrayList();
+                    // Routes.add(jSonRoutes.get(i));
+                    JSONObject Routes = new JSONObject(jSonRoutes.get(i).toString());
+                    String $id = Routes.getString("$id");
+                    String EdgeNo = Routes.getString("EdgeNo");
+                    String GeometryText = Routes.getString("GeometryText");
+                    // Log.e("GeometryText", "GeometryText" + GeometryText);
+                    String Geometry = Routes.getString("Geometry");
+                    // Log.e("Geometry", "Geometry----" + Geometry);
+                    JSONObject geometryObject = new JSONObject(Routes.getString("Geometry"));
+                    String $id1 = geometryObject.getString("$id");
+                    String type = geometryObject.getString("type");
+                    // Log.e("type", "type----" + type);
+                    String coordinates = geometryObject.getString("coordinates");
+                    // Log.e("coordinates", "coordinates----" + coordinates);
+                    JSONArray jSonLegs = new JSONArray(geometryObject.getString("coordinates"));
+                    // Log.e("jSonLegs", "jSonLegs----" + jSonLegs);
+                    for (int j = 0; j < jSonLegs.length(); j++) {
+                        //   Log.e("JSON LEGS", "JSON CORDINATES" + jSonLegs.get(j));
+                        points.add(jSonLegs.get(j));
+                        //    Log.e("JSON LEGS", " LATLNG RESULT------ " + points.size());
+                    }
+                    // Log.e("JSON LEGS", " LATLNG RESULT------ " + points.size());
+                    String  stPoint=String.valueOf(jSonLegs.get(0));
+                    // String  endPoint=String.valueOf(jSonLegs.get(jSonLegs.length()-1));
+
+                    stPoint=stPoint.replace("[","");
+                    stPoint=stPoint.replace("]","");
+                    String [] firstPoint=stPoint.split(",");
+                    Double stPointLat= Double.valueOf(firstPoint[0]);
+                    Double stPointLongi= Double.valueOf(firstPoint[1]);
+                    LatLng stVertex=new LatLng(stPointLongi,stPointLat);
+                    //    endPoint=endPoint.replace("[","");
+                    //    endPoint=endPoint.replace("]","");
+                    //    String [] secondPoint=endPoint.split(",");
+                    //   Double endPointLat= Double.valueOf(secondPoint[0]);
+                    //    Double endPointLongi= Double.valueOf(secondPoint[1]);
+                    //    LatLng endVertex=new LatLng(endPointLongi,endPointLat);
+
+                    //    double distance=showDistance(stVertex,endVertex);
+                    //    String distanceInKM = String.valueOf(distance/1000);
+                    //    Log.e("Distance -----","Distance in KM-------- "+ distanceInKM);
+                    StringBuilder query = new StringBuilder("INSERT INTO ");
+                    query.append(EdgeDataT.TABLE_NAME).append("(edgeNo,distanceInVertex,startPoint,allPoints,geometryText,endPoint) values (")
+                            .append("'").append(EdgeNo).append("',")
+                            .append("'").append("distanceInKM").append("',")
+                            .append("'").append(jSonLegs.get(0)).append("',")
+                            .append("'").append(points).append("',")
+                            .append("'").append(GeometryText).append("',")
+                            .append("'").append(jSonLegs.get(jSonLegs.length()-1)).append("')");
+                    sqlHandler.executeQuery(query.toString());
+                    sqlHandler.closeDataBaseConnection();
+                    for (int p = 0; p < points.size(); p++) {
+                        //    Log.e("JSON LEGS", "JSON POINTS LIST ---- " + points.get(p));
+                        String listItem = points.get(p).toString();
+                        listItem = listItem.replace("[", "");
+                        listItem = listItem.replace("]", "");
+                        //   Log.e("JSON LEGS", "JSON POINTS LIST ---- " + listItem);
+                        String[] subListItem = listItem.split(",");
+                        //  Log.e("JSON LEGS", "JSON POINTS LIST ---- " + subListItem.length);
+                        //  Log.e("JSON LEGS", "JSON POINTS LIST ---- " + subListItem[0]);
+                        //  Log.e("JSON LEGS", "JSON POINTS LIST ---- " + subListItem[1]);
+                        Double y = Double.valueOf(subListItem[0]);
+                        Double x = Double.valueOf(subListItem[1]);
+                        StringBuilder sb=new StringBuilder();
+                        //  sb.append(x).append(",").append(y).append(":");
+                        //  LocationPerpedicularPoints.add(sb.toString());
+                        LatLng latLng = new LatLng(x, y);
+                        //   Log.e("JSON LEGS", " LATLNG RESULT------ " + latLng);
+                        convertedPoints.add(latLng);
+                    }
+                    Log.e("convertedPoints", " convertedPoints------ " +  convertedPoints.size());
+                    MarkerOptions markerOptions = new MarkerOptions();
+                    for (int k = 0; k < convertedPoints.size(); k++) {
+                        if(polylineOptions!=null && mMap!=null) {
+                            markerOptions.position(convertedPoints.get(k));
+                            markerOptions.title("Position");
+                        }
+                        // polyline.setGeodesic(true);
+                    }
+                }
+                polylineOptions.addAll(convertedPoints);
+                polyline = mMap.addPolyline(polylineOptions);
+                polylineOptions.color(Color.CYAN).width(30);
+                mMap.addPolyline(polylineOptions);
+                polyline.setJointType(JointType.ROUND);
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+    }
+
 
     /*
         public void MoveWithGpsPointInBetWeenAllPoints(){

@@ -26,7 +26,7 @@ public class SqlDbHelper extends SQLiteOpenHelper {
 		db.execSQL(SqlHandler.getCreateTableSyntax(EdgeDataT.TABLE_NAME, EdgeDataT.MAPPING));
 		db.execSQL(SqlHandler.getCreateTableSyntax(UserT.TABLE_NAME, UserT.MAPPING));
 		db.execSQL(SqlHandler.getCreateTableSyntax(GeometryT.TABLE_NAME, GeometryT.MAPPING));
-		db.execSQL(SqlHandler.getCreateTableSyntax(RouteT.TABLE_NAME, GeometryT.MAPPING));
+		db.execSQL(SqlHandler.getCreateTableSyntax(RouteT.TABLE_NAME, RouteT.MAPPING));
 	}
 
 	@Override

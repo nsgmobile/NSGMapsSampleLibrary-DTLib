@@ -106,7 +106,7 @@
             android:textColor="#FFFFFF"
             android:layout_gravity="bottom"
              />
-<!--
+
         <TextView
             android:id="@+id/tv3"
             android:layout_width="fill_parent"
@@ -118,6 +118,7 @@
             android:textColor="#FFFFFF"
             android:layout_gravity="bottom"
         />
+        <!--
         <TextView
             android:id="@+id/tv4"
             android:layout_width="fill_parent"

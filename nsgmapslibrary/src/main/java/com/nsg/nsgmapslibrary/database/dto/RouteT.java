@@ -18,7 +18,7 @@ public class RouteT {
         MAPPING.add(new DatabaseColumn("sid", "setSid",true,true,false,"int"));
         MAPPING.add(new DatabaseColumn("routeID", "setRouteID",false,false,true,"text"));
         MAPPING.add(new DatabaseColumn("startNode", "setStartNode",false,false,true,"text"));
-        MAPPING.add(new DatabaseColumn("endPoint", "setEndNode",false,false,true,"text"));
+        MAPPING.add(new DatabaseColumn("endNode", "setEndNode",false,false,true,"text"));
         MAPPING.add(new DatabaseColumn("routeData", "setRouteData",false,false,true,"text"));
 
     }
@@ -31,13 +31,9 @@ public class RouteT {
         this.sid = sid;
     }
 
-    public String getRouteID() {
-        return routeID;
-    }
+    public String getRouteID() { return routeID; }
 
-    public void setRouteID(String routeID) {
-        this.routeID = routeID;
-    }
+    public void setRouteID(String routeID) { this.routeID = routeID; }
 
     public String getStartNode() {
         return startNode;
