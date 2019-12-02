@@ -10,11 +10,9 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.location.Address;
 import android.location.Geocoder;
-import android.location.LocationListener;
 import android.os.AsyncTask;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
-import android.util.DisplayMetrics;
 import android.view.Gravity;
 import android.view.View;
 
@@ -33,7 +31,6 @@ import android.location.Location;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.StrictMode;
 import android.os.SystemClock;
@@ -45,11 +42,8 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.ViewGroup;
-import android.view.animation.AccelerateDecelerateInterpolator;
-import android.view.animation.Animation;
 import android.view.animation.Interpolator;
 import android.view.animation.LinearInterpolator;
-import android.view.animation.RotateAnimation;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.PopupMenu;
@@ -57,7 +51,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 
- import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -70,7 +63,6 @@ import com.google.android.gms.maps.model.Circle;
 import com.google.android.gms.maps.model.CircleOptions;
 import com.google.android.gms.maps.model.JointType;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -81,9 +73,6 @@ import com.google.android.gms.maps.model.TileOverlayOptions;
 import com.google.android.gms.maps.model.TileProvider;
 import com.google.maps.android.SphericalUtil;
 import com.nsg.nsgmapslibrary.R;
-import com.nsg.nsgmapslibrary.SupportClasses.DecimalUtils;
-import com.nsg.nsgmapslibrary.SupportClasses.ETACalclator;
-import com.nsg.nsgmapslibrary.SupportClasses.Util;
 import com.nsg.nsgmapslibrary.database.db.SqlHandler;
 import com.nsg.nsgmapslibrary.database.dto.EdgeDataT;
 import com.nsg.nsgmapslibrary.database.dto.GeometryT;
@@ -107,7 +96,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -126,7 +114,7 @@ import static java.lang.Math.cos;
 import static java.lang.Math.sin;
 
 
-public class MainFragment extends Fragment implements View.OnClickListener, SensorEventListener {
+public class NSGIMainFragment extends Fragment implements View.OnClickListener, SensorEventListener {
     private static final int PERMISSION_REQUEST_CODE = 200;
     private static final int SENSOR_DELAY_NORMAL =5000;
     private ProgressDialog dialog;
@@ -230,16 +218,16 @@ public class MainFragment extends Fragment implements View.OnClickListener, Sens
     public interface FragmentToActivity {
         String communicate(String comm);
     }
-    private MainFragment.FragmentToActivity Callback;
-    public MainFragment(){ }
+    private NSGIMainFragment.FragmentToActivity Callback;
+    public NSGIMainFragment(){ }
     @SuppressLint("ValidFragment")
-    public MainFragment(String BASE_MAP_URL_FORMAT,String DBCSV_PATH,String jobId,String routeId, int mode, int radius ) {
+    public NSGIMainFragment(String BASE_MAP_URL_FORMAT, String DBCSV_PATH, String jobId, String routeId, int mode, int radius ) {
         enteredMode = mode;
         routeDeviationDistance=radius;
-        MainFragment.this.BASE_MAP_URL_FORMAT = BASE_MAP_URL_FORMAT;
-        MainFragment.this.DBCSV_PATH = DBCSV_PATH;
-        MainFragment.this.routeIDName=routeId;
-        MainFragment.this.jobId=jobId;
+        NSGIMainFragment.this.BASE_MAP_URL_FORMAT = BASE_MAP_URL_FORMAT;
+        NSGIMainFragment.this.DBCSV_PATH = DBCSV_PATH;
+        NSGIMainFragment.this.routeIDName=routeId;
+        NSGIMainFragment.this.jobId=jobId;
     }
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -890,7 +878,7 @@ public class MainFragment extends Fragment implements View.OnClickListener, Sens
                         .setCancelable(false)
                         .setPositiveButton(" Finish ", new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int id) {
-                                Intent i=new Intent(getActivity(),MainFragment.class);
+                                Intent i=new Intent(getActivity(), NSGIMainFragment.class);
                                 startActivity(i);
                             }
                         });
