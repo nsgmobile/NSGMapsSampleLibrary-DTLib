@@ -73,6 +73,8 @@ import com.google.android.gms.maps.model.TileOverlayOptions;
 import com.google.android.gms.maps.model.TileProvider;
 import com.google.maps.android.SphericalUtil;
 import com.nsg.nsgmapslibrary.R;
+import com.nsg.nsgmapslibrary.SupportClasses.DecimalUtils;
+import com.nsg.nsgmapslibrary.SupportClasses.ETACalclator;
 import com.nsg.nsgmapslibrary.database.db.SqlHandler;
 import com.nsg.nsgmapslibrary.database.dto.EdgeDataT;
 import com.nsg.nsgmapslibrary.database.dto.GeometryT;
@@ -106,6 +108,7 @@ import de.siegmar.fastcsv.reader.CsvReader;
 import de.siegmar.fastcsv.reader.CsvRow;
 
 import static android.Manifest.permission.ACCESS_FINE_LOCATION;
+import static android.Manifest.permission.READ_EXTERNAL_STORAGE;
 import static android.Manifest.permission_group.STORAGE;
 import static android.content.Context.SENSOR_SERVICE;
 import static android.graphics.BitmapFactory.decodeFile;
@@ -213,6 +216,7 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
     float azimuthInDegress;
     float degree,lastUpdate;
     private String TotalDistance;
+    double TotalDistanceInMTS;
     private List<EdgeDataT> EdgeContainsDataList;
     StringBuilder time= new StringBuilder();
     public interface FragmentToActivity {
@@ -262,7 +266,6 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
                     + " must implement FragmentToActivity");
         }
     }
-
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -280,55 +283,71 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
         checkPermission();
         requestPermission();
         String delQuery = "DELETE  FROM " + RouteT.TABLE_NAME;
+        sqlHandler.executeQuery(delQuery);
         InsertAllRouteData(DBCSV_PATH);
+        getRouteAccordingToRouteID(routeIDName);
         change_map_options = (ImageButton)rootView.findViewById(R.id.change_map_options);
         change_map_options.setOnClickListener(this);
-
+        RouteT route = RouteDataList.get(0);
+        final String routeData = route.getRouteData();
+        String sourceText=route.getStartNode();
+        String[]  text =sourceText.split(" ");
+        sourceLat= Double.parseDouble(text[1]);
+        sourceLng= Double.parseDouble(text[0]);
+        String destinationText=route.getEndNode();
+        String[]  text1 =destinationText.split(" ");
+        destLat= Double.parseDouble(text1[1]);
+        destLng= Double.parseDouble(text1[0]);
+        SourceNode=new LatLng(sourceLat,sourceLng);
+        DestinationNode=new LatLng(destLat,destLng);
         SupportMapFragment mapFragment = (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.frg);  //use SuppoprtMapFragment for using in fragment instead of activity  MapFragment1 = activity   SupportMapFragment = fragment
         mapFragment.getMapAsync(new OnMapReadyCallback() {
             @Override
             public void onMapReady(GoogleMap googlemap) {
-
-                mMap = googlemap;
-                mMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(getContext(), R.raw.stle_map_json));
+                NSGIMainFragment.this.mMap = googlemap;
+                NSGIMainFragment.this.mMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(getContext(), R.raw.stle_map_json));
                 TileProvider tileProvider = new ExpandedMBTilesTileProvider(new File(BASE_MAP_URL_FORMAT.toString()), 256, 256);
                 TileOverlay tileOverlay = mMap.addTileOverlay(new TileOverlayOptions().tileProvider(tileProvider));
                 tileOverlay.setTransparency(0.5f - tileOverlay.getTransparency());
                 tileOverlay.setVisible(true);
+                if(routeData!=null) {
+                    GetRouteFromDBPlotOnMap(routeData);
+                    // GetRouteDetails(SourcePosition.toString(),DestinationPosition.toString());
+                }
+                StringBuilder routeAlert=new StringBuilder();
+                routeAlert.append("src");
+                sendData(routeAlert.toString());
+                // sendTokenRequest();
+                getAllEdgesData();
+                addMarkers();
+                getValidRouteData();
+                if (ActivityCompat.checkSelfPermission(getContext(), ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                    // TODO: Consider calling
+                    //    ActivityCompat#requestPermissions
+                    return;
+                }
+                mMap.setMyLocationEnabled(true);
+                mMap.setBuildingsEnabled(true);
+                mMap.getUiSettings().setZoomControlsEnabled(true);
+                mMap.getUiSettings().setCompassEnabled(true);
+                mMap.getUiSettings().setMyLocationButtonEnabled(true);
+                mMap.getUiSettings().setMapToolbarEnabled(true);
+                mMap.getUiSettings().setZoomGesturesEnabled(true);
+                mMap.getUiSettings().setScrollGesturesEnabled(true);
+                mMap.getUiSettings().setTiltGesturesEnabled(true);
+                mMap.getUiSettings().setRotateGesturesEnabled(true);
+                mMap.getUiSettings().setMyLocationButtonEnabled(true);
                 getRouteAccordingToRouteID(routeIDName);
+                Log.e("RouteData","RouteData"+RouteDataList.size());
                 if(RouteDataList!=null && RouteDataList.size()>0) {
                     dialog = new ProgressDialog(getActivity(), R.style.ProgressDialog);
                     dialog.setMessage("Fetching Route");
                     dialog.setMax(100);
                     dialog.show();
                     new Handler().postDelayed(new Runnable() {
-                        @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
+                        //@RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
                         @Override
                         public void run() {
-                            RouteT route = RouteDataList.get(0);
-                            String routeData = route.getRouteData();
-                            String sourceText=route.getStartNode();
-                            String[]  text =sourceText.split(" ");
-                            sourceLat= Double.parseDouble(text[1]);
-                            sourceLng= Double.parseDouble(text[0]);
-                            String destinationText=route.getEndNode();
-                            String[]  text1 =destinationText.split(" ");
-                            destLat= Double.parseDouble(text1[1]);
-                            destLng= Double.parseDouble(text1[0]);
-                            SourceNode=new LatLng(sourceLat,sourceLng);
-                            DestinationNode=new LatLng(destLat,destLng);
-                            if(routeData!=null) {
-                                GetRouteFromDBPlotOnMap(routeData);
-                               // GetRouteDetails(SourcePoint,DestinationPoint);
-                            }
-                            //
-                            StringBuilder routeAlert=new StringBuilder();
-                            routeAlert.append("src");
-                            sendData(routeAlert.toString());
-                            // sendTokenRequest();
-                            getAllEdgesData();
-                            addMarkers();
-                            getValidRouteData();
                             // dialog.dismiss();
                             nearestPointValuesList=new ArrayList<LatLng>();
                             nearestPointValuesList.add(new LatLng(sourceLat,sourceLng));
@@ -337,63 +356,30 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
                             if(enteredMode==1 &&edgeDataList!=null && edgeDataList.size()>0){
                                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
                                     // MoveWithGPSMARKER();
-                                    if (ActivityCompat.checkSelfPermission(getContext(), ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                                        // TODO: Consider calling
-                                        //    ActivityCompat#requestPermissions
-                                        return;
-                                    }
-                                    mMap.setMyLocationEnabled(true);
-                                    mMap.setBuildingsEnabled(true);
-                                    mMap.getUiSettings().setZoomControlsEnabled(true);
-                                    mMap.getUiSettings().setCompassEnabled(true);
-                                    mMap.getUiSettings().setMyLocationButtonEnabled(true);
-                                    mMap.getUiSettings().setMapToolbarEnabled(true);
-                                    mMap.getUiSettings().setZoomGesturesEnabled(true);
-                                    mMap.getUiSettings().setScrollGesturesEnabled(true);
-                                    mMap.getUiSettings().setTiltGesturesEnabled(true);
-                                    mMap.getUiSettings().setRotateGesturesEnabled(true);
-                                    mMap.getUiSettings().setMyLocationButtonEnabled(true);
-                                    Handler handler = new Handler();
-                                    handler.postDelayed(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            mMap.setOnMyLocationChangeListener(new GoogleMap.OnMyLocationChangeListener() {
-                                                @Override
-                                                public void onMyLocationChange(Location location) {
-                                                    if (mPositionMarker != null) {
-                                                        mPositionMarker.remove();
-
-                                                    }
-                                                    vehicleSpeed=location.getSpeed();
-                                                    getLatLngPoints();
-                                                    // LatLng currentGpsPosition = new LatLng(24.978305, 55.066644);
+                                   mMap.setOnMyLocationChangeListener(new GoogleMap.OnMyLocationChangeListener() {
+                                       @Override
+                                         public void onMyLocationChange(Location location) {
+                                           if (mPositionMarker != null) {
+                                            mPositionMarker.remove();
+                                           }
+                                           vehicleSpeed=location.getSpeed();
+                                            getLatLngPoints();
+                                           LatLng currentGpsPosition1 = new LatLng(location.getLatitude(),location.getLongitude());
+                                           Log.e("currentGpsPosition","currentGpsPosition -----"+currentGpsPosition1);
                                                     // NavigationDirection(currentGpsPosition,DestinationPosition);
-                                                    LatLng currentGpsPosition = LatLngDataArray.get(locationFakeGpsListener);
-                                                    MoveWithGpsPointInBetWeenAllPoints(currentGpsPosition);
-                                                    locationFakeGpsListener = locationFakeGpsListener + 1;
-                                                }
-                                            });
-                                        }
-                                    }, 0);
+                                            LatLng currentGpsPosition = LatLngDataArray.get(locationFakeGpsListener);
+                                            Log.e("currentGpsPosition","currentGpsPosition LATLNG DATA ARRAY "+ LatLngDataArray.size());
+                                            Log.e("currentGpsPosition","currentGpsPosition"+currentGpsPosition);
+                                            MoveWithGpsPointInBetWeenAllPoints(currentGpsPosition);
+                                            locationFakeGpsListener = locationFakeGpsListener + 1;
+                                       }
+                                   });
+
                                 }
                             }else if(enteredMode==2){
                                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-                                    if (ActivityCompat.checkSelfPermission(getContext(), ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                                        // TODO: Consider calling
-                                        //    ActivityCompat#requestPermissions
-                                        return;
-                                    }
-                                    mMap.setMyLocationEnabled(true);
-                                    mMap.setBuildingsEnabled(true);
-                                    mMap.getUiSettings().setZoomControlsEnabled(true);
-                                    mMap.getUiSettings().setCompassEnabled(true);
-                                    mMap.getUiSettings().setMyLocationButtonEnabled(true);
-                                    mMap.getUiSettings().setMapToolbarEnabled(true);
-                                    mMap.getUiSettings().setZoomGesturesEnabled(true);
-                                    mMap.getUiSettings().setScrollGesturesEnabled(true);
-                                    mMap.getUiSettings().setTiltGesturesEnabled(true);
-                                    mMap.getUiSettings().setRotateGesturesEnabled(true);
-                                    mMap.getUiSettings().setMyLocationButtonEnabled(true);
+                                    if (ActivityCompat.checkSelfPermission(getContext(), ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+
                                     mMap.setOnMyLocationChangeListener(new GoogleMap.OnMyLocationChangeListener() {
                                         @Override
                                         public void onMyLocationChange(Location location) {
@@ -401,8 +387,7 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
                                                 mPositionMarker.remove();
                                             }
                                             LatLng currentGpsPosition=new LatLng(location.getLatitude(),location.getLongitude());
-                                                /*
-                                               LatLng currentGpsPosition=new LatLng(location.getLatitude(),location.getLongitude());
+
                                                 mPositionMarker = mMap.addMarker(new MarkerOptions()
                                                         .position(currentGpsPosition)
                                                         .title("currentLocation")
@@ -416,79 +401,6 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
                                                         .target(new LatLng(currentGpsPosition.latitude, currentGpsPosition.longitude))
                                                         .bearing(location.bearingTo(location)).tilt(65.5f).zoom(20)
                                                         .build();
-
-                                                CameraUpdate center = CameraUpdateFactory.newLatLng(currentGpsPosition);
-                                                CameraUpdate zoom = CameraUpdateFactory.zoomTo(20);
-                                                mMap.animateCamera(CameraUpdateFactory.newCameraPosition(currentPlace), 2000, null);
-                                                mMap.setOnCameraChangeListener(new GoogleMap.OnCameraChangeListener() {
-                                                    @Override            public void onCameraChange(CameraPosition cameraPosition) {
-
-                                                        //http://androidalc.blogspot.com/2016/03/move-google-map-under-marker-and-get.html
-
-                                                    }
-                                                });
-                                                if (lastLocation == null) {
-                                                    // save last location
-                                                    lastLocation = location;
-                                                    // initial camera
-                                                    CameraPosition.Builder b = CameraPosition.builder().
-                                                            zoom(15.0F).
-                                                            target(new LatLng(lastLocation.getLatitude(), lastLocation.getLongitude()));
-                                                    CameraUpdate cu = CameraUpdateFactory.newCameraPosition(b.build());
-                                                    mMap.animateCamera(cu);
-                                                    return;
-                                                }
-                                                // subsequent updates
-
-                                                LatLng oldPos = new LatLng(lastLocation.getLatitude(), lastLocation.getLongitude());
-                                                LatLng newPos = new LatLng(location.getLatitude(), location.getLongitude());
-
-                                                // ignore very small position deviations (prevents wild swinging)
-                                                double d = SphericalUtil.computeDistanceBetween(oldPos, newPos);
-                                                if (d < 10) {
-                                                    return;
-                                                }
-
-                                                double bearing = SphericalUtil.computeHeading(oldPos, newPos);
-                                                Projection p = mMap.getProjection();
-                                                Point  bottomRightPoint = p.toScreenLocation(p.getVisibleRegion().nearRight);
-                                                Point center = new Point(bottomRightPoint.x/2,bottomRightPoint.y/2);
-                                                Point offset = new Point(center.x, (center.y + 300));
-
-                                                LatLng centerLoc = p.fromScreenLocation(center);
-                                                LatLng offsetNewLoc = p.fromScreenLocation(offset);
-
-                                                double offsetDistance = SphericalUtil.computeDistanceBetween(centerLoc, offsetNewLoc);
-                                                LatLng shadowTgt = SphericalUtil.computeOffset(newPos,offsetDistance,bearing);
-                                                if (mPositionMarker != null) {
-                                                 //   mMap.setCenter(newPos);
-                                                } else {
-                                                    mMap.addCircle(new CircleOptions().strokeColor(Color.GREEN).center(newPos).radius(50));
-                                                }
-                                                // update camera
-                                                CameraPosition.Builder b = CameraPosition.builder();
-                                                b.zoom(15.0F);
-                                                b.bearing((float)(bearing));
-                                                b.target(shadowTgt);
-                                                CameraUpdate cu = CameraUpdateFactory.newCameraPosition(b.build());
-                                                mMap.animateCamera(cu);
-
-                                                // save location as last for next update
-                                                lastLocation = location;
-                                                */
-                                            Projection p = mMap.getProjection();
-                                            Point  bottomRightPoint = p.toScreenLocation(p.getVisibleRegion().nearRight);
-                                            Point center = new Point(bottomRightPoint.x/2,bottomRightPoint.y/2);
-                                            Point offset = new Point(center.x, (center.y + 350));
-                                            LatLng centerLoc = p.fromScreenLocation(center);
-                                            LatLng offsetNewLoc = p.fromScreenLocation(offset);
-                                            double offsetDistance = SphericalUtil.computeDistanceBetween(centerLoc, offsetNewLoc);
-                                            LatLng shadowTgt = SphericalUtil.computeOffset(currentGpsPosition,offsetDistance,location.getBearing());
-
-                                            CameraPosition currentPlace = new CameraPosition.Builder()
-                                                    .target(shadowTgt)
-                                                    .bearing(location.getBearing()).tilt(65.5f).zoom(20)
-                                                    .build();
                                             mMap.animateCamera(CameraUpdateFactory.newCameraPosition(currentPlace), 5000, null);
                                         }
                                     });
@@ -520,7 +432,6 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
     }
     private  List<RouteT> getRouteAccordingToRouteID(String routeIDName) {
         String query = "SELECT * FROM " + RouteT.TABLE_NAME +" WHERE routeID = "+"'"+routeIDName+"'";
-        Log.e("Select","Select Query ------- "+ query);
         Cursor c1 = sqlHandler.selectQuery(query);
         RouteDataList = (List<RouteT>) SqlHandler.getDataRows(RouteT.MAPPING, RouteT.class, c1);
         sqlHandler.closeDataBaseConnection();
@@ -569,8 +480,6 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
     }
 
     public void addMarkers(){
-       // LatLng position1= new LatLng(SourceNode);
-        // Log.e("URL FORMAT","Uposition2 T ****************** "+ position1);
         sourceMarker = mMap.addMarker(new MarkerOptions()
                 .position(SourceNode)
                 .icon(bitmapDescriptorFromVector(getActivity(),R.drawable.source_red)));
@@ -580,7 +489,7 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
                 .tilt(45)
                 .build();
         mMap.animateCamera(CameraUpdateFactory.newCameraPosition(googlePlex), 1000, null);
-       // LatLng position2= new LatLng(destLat,destLng);
+
         destinationMarker= mMap.addMarker(new MarkerOptions()
                 .position(DestinationNode)
                 .icon(bitmapDescriptorFromVector(getActivity(),R.drawable.destination_green)));
@@ -609,15 +518,11 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
                 String points = edge.getAllPoints(); // All points in the edge
                 String geometryText=edge.getGeometryText();
                 String distanceInEdge = edge.getDistanceInVertex();
-                TotalDistance = edge.getTotaldistance();
-                // Geometry Direction text
-                Log.e("EdgePoints Data","EdgePoints Data Geometry FROM VALID ROUTE DATA " + geometryText+" : "+ edgeNo);
-                //[[55.07252845510704,24.986485718893903], [55.07252691395126,24.986503080465624], [55.07252858393359,24.9865204314153], [55.072533418545014,24.986537282374343], [55.072541282105426,24.9865531573588]]
-                if(points!=null){
+                TotalDistance =edge.getTotaldistance();
+                    if(points!=null){
                     String AllPoints = points.replace("[", "");
                     AllPoints = AllPoints.replace("]", "");
                     String[] AllPointsArray = AllPoints.split(", ");
-                    Log.e("ALL POINTS", "ALL POINTS" + AllPointsArray.length);
                     for (int ap = 0; ap < AllPointsArray.length; ap++) {
 
                         String data = String.valueOf(AllPointsArray[ap]);
@@ -639,7 +544,6 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
 
 
                 for (int pntCount = 0; pntCount < AllPointsList.size(); pntCount++) {
-                    Log.e("ALL POINTS ", "FROM DATABASE with Edge no----- " + AllPointsList.get(pntCount));
                     String data = String.valueOf(AllPointsList.get(pntCount));
                     String dataStr = data.replace("[", "");
                     dataStr = dataStr.replace("]", "");
@@ -650,7 +554,6 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
                     edgeDataPointsList.add(PointData);
 
 
-                    Log.e("ALL POINTS ", "FROM DATABASE ----- " + edgeDataPointsList.get(pntCount));
                 }
             }
 
@@ -659,9 +562,7 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
                 EdgeDataT edgeK=EdgeContainsDataList.get(k);
                 StringBuilder sb=new StringBuilder();
                 sb.append("STPOINT :"+edgeK.getStartPoint()+"EndPt:"+edgeK.getEndPoint()+"Points:"+edgeK.getPositionMarkingPoint()+"Geometry TEXT:"+ edgeK.getGeometryText());
-                Log.e("EDGE CONTAINS","EDGE CONTAINS"+sb.toString());
             }
-            Log.e("EDGE CONTAINS","EDGE CONTAINS"+sb.toString());
 
         }
 
@@ -672,24 +573,19 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
         List<LatLng> EdgeWithoutDuplicates = removeDuplicates(edgeDataPointsList);
         nearestValuesMap=new HashMap<>();
         if (EdgeWithoutDuplicates != null && EdgeWithoutDuplicates.size() > 0) {
-            Log.e("currentGpsPosition ", "currentGpsPosition POINT----------" + currentGpsPosition);
             String FirstCordinate="",SecondCordinate="";
             distancesList = new ArrayList();
             distanceValuesList = new ArrayList();
             hash_map = new HashMap<String, String>();
             for (int epList = 0; epList < EdgeWithoutDuplicates.size(); epList++) {
                 LatLng PositionMarkingPoint = EdgeWithoutDuplicates.get(epList);
-                Log.e("currentGpsPosition ", "PositionMarking POINT----------" + PositionMarkingPoint);
-                Log.e("currentGpsPosition ", "currentGpsPosition POINT----------" + currentGpsPosition);
                 double distance = distFrom(PositionMarkingPoint.latitude,PositionMarkingPoint.longitude,currentGpsPosition.longitude,currentGpsPosition.latitude);
                 hash_map.put(String.valueOf(distance), String.valueOf(EdgeWithoutDuplicates.get(epList)));
-                // distanceValuesList.add("A"+" ");
-                //  Log.e("Sorted ArrayList ", "in Ascending order : " + distanceValuesList.get(epList));
                 distancesList.add(distance);
                 Collections.sort(distancesList);
             }
             for(int i=0;i<distancesList.size();i++) {
-                Log.e("Sorted ArrayList ", "in Ascending order : " + distancesList.get(i));
+
             }
             String FirstShortestDistance = String.valueOf(distancesList.get(0));
             String SecondShortestDistance = String.valueOf(distancesList.get(1));
@@ -697,11 +593,8 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
             if (answerFirst) {
                 System.out.println("The list contains " + FirstShortestDistance);
                 FirstCordinate = (String)hash_map.get(FirstShortestDistance);
-                Log.e("Sorted ArrayList ", "INDEX----- : " + FirstCordinate);
-                Log.e("AllPointEdgeNo ", "AllPointEdgeNo " + AllPointEdgeNo.size());
                 key= String.valueOf(getKeysFromValue(AllPointEdgeNo,FirstCordinate));
                 distanceKey= String.valueOf(getKeysFromValue(AllPointEdgeDistaces,FirstCordinate));
-                Log.e("KEY ", "KEY " + key);
             } else {
                 System.out.println("The list does not contains "+ "FALSE");
             }
@@ -709,7 +602,7 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
             if (answerSecond) {
                 System.out.println("The list contains " + SecondShortestDistance);
                 SecondCordinate = (String)hash_map.get(SecondShortestDistance);
-                Log.e("Sorted ArrayList ", "INDEX----- : " + SecondCordinate);
+
             } else {
                 System.out.println("The list does not contains "+ "FALSE");
             }
@@ -721,21 +614,13 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
 
             geometryDirectionText=key;
             geometryDirectionDistance=distanceKey;
-             Log.e("Sorted ArrayList ", "-----geometryDirectionText :" + geometryDirectionText);
-            Log.e("Sorted ArrayList ", "-----geometryDirectionText :" + geometryDirectionText);
 
-            // Log.e("Sorted ArrayList ", "-----FirstLatitude :" + FirstLatitude);
-            // Log.e("Sorted ArrayList ", "-----FirstLongitude" + FirstLongitude);
-            // String[] SecondCordinateArray = SecondCordinate.split("#");
-            //  Log.e("Sorted ArrayList ", "in Ascending order ---AT 2--- :" + SecondCordinateArray[0]);
             String Second= SecondCordinate.replace("lat/lng: (","");
             Second= Second.replace(")","");
             String[] SecondLatLngsData=Second.split(",");
             double SecondLatitude= Double.valueOf(SecondLatLngsData[0]);
             double SecondLongitude= Double.valueOf(SecondLatLngsData[1]);
 
-            // Log.e("Sorted ArrayList ", "-----SecondLatitude :" + SecondLatitude);
-            // Log.e("Sorted ArrayList ", "-----SecondLongitude" + SecondLongitude);
             double x= currentGpsPosition.longitude;
             double y= currentGpsPosition.longitude;
             int value = (int)x;
@@ -743,7 +628,6 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
             LatLng source=new LatLng(FirstLongitude,FirstLatitude);
             LatLng destination=new LatLng(SecondLongitude,SecondLatitude);
 
-             Log.e("EdgeSt Point", "End point " + DestinationPosition);
             nearestPositionPoint= findNearestPoint(currentGpsPosition,source,destination);
             OldNearestGpsList.add(nearestPositionPoint);
 
@@ -796,6 +680,7 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
         }else{
             animateCarMove(mPositionMarker, OldGps, nearestPositionPoint, 10000,currentGpsPosition);
         }
+        caclulateETA(TotalDistanceInMTS,SourceNode,currentGpsPosition,DestinationNode);
         NavigationDirection(currentGpsPosition,DestinationNode);
         AlertDestination(currentGpsPosition);
 
@@ -849,9 +734,7 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
         int GpsIndex=OldNearestGpsList.indexOf(nearestPositionPoint);
         LatLng cameraPosition=OldNearestGpsList.get(GpsIndex);
         if (currentGpsPosition.equals(DestinationNode)) {
-            Log.e("last Point","last Point--------- "+ "TRUE");
             lastDistance= showDistance(cameraPosition,DestinationNode);
-            Log.e("lastDistance","lastDistance--------- "+ lastDistance );
             if (lastDistance <5) {
                 if (ActivityCompat.checkSelfPermission(getContext(), ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                     // TODO: Consider calling
@@ -886,7 +769,6 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
                 alert.show();
             }
         }else{
-            Log.e("last Point","last Point--------- "+ "FALSE");
         }
     }
     double mphTOkmph(double mph)
@@ -924,13 +806,13 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
                         StrictMode.setThreadPolicy(policy);
                         try {
                             String httprequest = "http://202.53.11.74/dtnavigation/api/routing/routenavigate";
+                            Log.e("HTTP REQUEST","HTTP REQUEST"+httprequest);
                             String FeatureResponse = HttpPost(httprequest,SourcePoint,DestinationPoint);
-                            Log.e("RESPONSE", "RESPONSE" + FeatureResponse);
+                            Log.e("HTTP REQUEST","HTTP REQUEST"+FeatureResponse);
                             JSONObject jsonObject = null;
                             try {
                                 if(FeatureResponse!=null){
                                     String delQuery = "DELETE  FROM " + EdgeDataT.TABLE_NAME;
-                                    Log.e("DEL QUERY","DEL QUERY " + delQuery);
                                     sqlHandler.executeQuery(delQuery.toString());
                                     jsonObject = new JSONObject(FeatureResponse);
                                     String ID = String.valueOf(jsonObject.get("$id"));
@@ -938,56 +820,32 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
                                     String Status = jsonObject.getString("Status");
                                     double TotalDistance = jsonObject.getDouble("TotalDistance");
                                     JSONArray jSonRoutes = new JSONArray(jsonObject.getString("Route"));
-                                    // Log.e("jSonRoutes", "jSonRoutes" + jSonRoutes);
                                     PolylineOptions polylineOptions = new PolylineOptions();
                                     Polyline polyline = null;
                                     convertedPoints=new ArrayList<LatLng>();
                                     for (int i = 0; i < jSonRoutes.length(); i++) {
                                         points=new ArrayList();
-                                        // Log.e("jSonRoutes", "jSonRoutes" + jSonRoutes.get(i));
-
-                                        // List Routes=new ArrayList();
-                                        // Routes.add(jSonRoutes.get(i));
                                         JSONObject Routes = new JSONObject(jSonRoutes.get(i).toString());
                                         String $id = Routes.getString("$id");
                                         String EdgeNo = Routes.getString("EdgeNo");
                                         String GeometryText = Routes.getString("GeometryText");
-                                        // Log.e("GeometryText", "GeometryText" + GeometryText);
                                         String Geometry = Routes.getString("Geometry");
-                                        // Log.e("Geometry", "Geometry----" + Geometry);
                                         JSONObject geometryObject = new JSONObject(Routes.getString("Geometry"));
                                         String $id1 = geometryObject.getString("$id");
                                         String type = geometryObject.getString("type");
-                                        // Log.e("type", "type----" + type);
                                         String coordinates = geometryObject.getString("coordinates");
-                                        // Log.e("coordinates", "coordinates----" + coordinates);
                                         JSONArray jSonLegs = new JSONArray(geometryObject.getString("coordinates"));
-                                        // Log.e("jSonLegs", "jSonLegs----" + jSonLegs);
-                                        for (int j = 0; j < jSonLegs.length(); j++) {
-                                            //   Log.e("JSON LEGS", "JSON CORDINATES" + jSonLegs.get(j));
+                                         for (int j = 0; j < jSonLegs.length(); j++) {
                                             points.add(jSonLegs.get(j));
-                                            //    Log.e("JSON LEGS", " LATLNG RESULT------ " + points.size());
                                         }
-                                        // Log.e("JSON LEGS", " LATLNG RESULT------ " + points.size());
                                         String  stPoint=String.valueOf(jSonLegs.get(0));
-                                        // String  endPoint=String.valueOf(jSonLegs.get(jSonLegs.length()-1));
-
                                         stPoint=stPoint.replace("[","");
                                         stPoint=stPoint.replace("]","");
                                         String [] firstPoint=stPoint.split(",");
                                         Double stPointLat= Double.valueOf(firstPoint[0]);
                                         Double stPointLongi= Double.valueOf(firstPoint[1]);
                                         LatLng stVertex=new LatLng(stPointLongi,stPointLat);
-                                        //    endPoint=endPoint.replace("[","");
-                                        //    endPoint=endPoint.replace("]","");
-                                        //    String [] secondPoint=endPoint.split(",");
-                                        //   Double endPointLat= Double.valueOf(secondPoint[0]);
-                                        //    Double endPointLongi= Double.valueOf(secondPoint[1]);
-                                        //    LatLng endVertex=new LatLng(endPointLongi,endPointLat);
 
-                                        //    double distance=showDistance(stVertex,endVertex);
-                                        //    String distanceInKM = String.valueOf(distance/1000);
-                                        //    Log.e("Distance -----","Distance in KM-------- "+ distanceInKM);
                                         StringBuilder query = new StringBuilder("INSERT INTO ");
                                         query.append(EdgeDataT.TABLE_NAME).append("(edgeNo,distanceInVertex,startPoint,allPoints,geometryText,endPoint) values (")
                                                 .append("'").append(EdgeNo).append("',")
@@ -999,32 +857,23 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
                                         sqlHandler.executeQuery(query.toString());
                                         sqlHandler.closeDataBaseConnection();
                                         for (int p = 0; p < points.size(); p++) {
-                                            //    Log.e("JSON LEGS", "JSON POINTS LIST ---- " + points.get(p));
+
                                              String listItem = points.get(p).toString();
                                             listItem = listItem.replace("[", "");
                                             listItem = listItem.replace("]", "");
-                                            //   Log.e("JSON LEGS", "JSON POINTS LIST ---- " + listItem);
                                             String[] subListItem = listItem.split(",");
-                                            //  Log.e("JSON LEGS", "JSON POINTS LIST ---- " + subListItem.length);
-                                            //  Log.e("JSON LEGS", "JSON POINTS LIST ---- " + subListItem[0]);
-                                            //  Log.e("JSON LEGS", "JSON POINTS LIST ---- " + subListItem[1]);
                                             Double y = Double.valueOf(subListItem[0]);
                                             Double x = Double.valueOf(subListItem[1]);
                                             StringBuilder sb=new StringBuilder();
-                                            //  sb.append(x).append(",").append(y).append(":");
-                                            //  LocationPerpedicularPoints.add(sb.toString());
                                             LatLng latLng = new LatLng(x, y);
-                                            //   Log.e("JSON LEGS", " LATLNG RESULT------ " + latLng);
                                             convertedPoints.add(latLng);
                                         }
-                                        Log.e("convertedPoints", " convertedPoints------ " +  convertedPoints.size());
                                         MarkerOptions markerOptions = new MarkerOptions();
                                         for (int k = 0; k < convertedPoints.size(); k++) {
                                             if(polylineOptions!=null && mMap!=null) {
                                                 markerOptions.position(convertedPoints.get(k));
                                                 markerOptions.title("Position");
                                             }
-                                           // polyline.setGeodesic(true);
                                         }
                                     }
                                     polylineOptions.addAll(convertedPoints);
@@ -1059,13 +908,9 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
         conn.setRequestProperty("Content-Type", "application/json");
         conn.setRequestProperty("Accept", "text/plain");
         JSONObject jsonObject = buidJsonObject(latLng1,latLng2);
-        Log.e(" Message", " jsonObject: " + jsonObject);
         setPostRequestContent(conn, jsonObject);
         conn.connect();
-        Log.e("Response Code", "ResponseCode: " + conn.getResponseCode());
         result = conn.getResponseMessage();
-        Log.e("Response Message", "Response Message: " + result);
-
         if (conn.getResponseCode() != 200) {
 
         } else {
@@ -1075,7 +920,7 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
             while ((output = br.readLine()) != null) {
                 System.out.println(output);
                 LoginResponse = sb.append(output).append(" ").toString();
-                //      Log.e("Login Response "," From server ############ "+LoginResponse);
+
             }
         }
         conn.disconnect();
@@ -1151,19 +996,15 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
         //To Verify Route Deviation
         //currentLocationList.add(currentGpsPosition);
         String nearestPoint = GenerateLinePoint( sourceLng,sourceLat,destLng,destLat,currentGpsPosition.longitude,currentGpsPosition.latitude);
-        Log.e("NEAREST POINT", "NEAREST POINT----------" + nearestPoint);
         String[] nearestDataStr = nearestPoint.split(",");
         double latitude = Double.parseDouble(nearestDataStr[0]);
         double longitude = Double.parseDouble(nearestDataStr[1]);
         LatLng nearestPosition=new LatLng(longitude,latitude);
         double returnedDistance= showDistance(currentGpsPosition,nearestPosition);
-        Log.e("returnedDistance", "returnedDistance --------- "+ returnedDistance);
-       // drawMarkerWithCircle(nearestPosition,markDistance);
         if(returnedDistance > markDistance){
             Toast toast = Toast.makeText(getContext(), " ROUTE DEVIATED ", Toast.LENGTH_LONG);
             toast.setMargin(100, 100);
             toast.show();
-            Log.e("Route Deviation","Route deviation"+" Route Deviated");
             //drawDeviatedRoute(currentGpsPosition, DestinationPosition);
             String cgpsLat= String.valueOf(currentGpsPosition.latitude);
             String cgpsLongi= String.valueOf(currentGpsPosition.longitude);
@@ -1272,8 +1113,6 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
         LatLngDataArray.add(new LatLng(24.979965,55.067191));// ok
         LatLngDataArray.add(new LatLng(24.979878,55.067205));// ok
         */
-
-
 
 
         LatLngDataArray.add(new LatLng(24.978002, 55.064153));
@@ -1452,7 +1291,6 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
             markerlist= new ArrayList<Marker>();
             markerlist.add(fakeGpsMarker);
         }
-        Log.e("MarkerList :", " MarkerList ----- " + markerlist.size());
     }
     public void removeFakeGPSMarkers(){
         getLatLngPoints();
@@ -1465,7 +1303,6 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
                 }
             }
         }
-        Log.e("MarkerList :", " MarkerList ----- " + markerlist.size());
     }
 
     @Override
@@ -1539,18 +1376,13 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
             public void run() {
                 try {
                     String url1 = "http://86.96.196.245/ROROAPI/Login/GetToken";
-                    Log.e("SAVING DATA ", "SAVING DATA " + url1);
                     tokenResponse = HttpPost1(url1);
-                    Log.e("SAVING DATA ", "RESPONSE DATA " + tokenResponse);
                     JSONObject obj = new JSONObject(tokenResponse);
                     tokenNumber = obj.getString("tokenNumber");
 
                     if(tokenNumber!=null && !tokenNumber.isEmpty()){
                         String url = "http://86.96.196.245/ROROAPI/NSGMap/AlertDataProcess";
-                        Log.e("SAVING DATA ", "SAVING DATA " + url);
                         updaterServiceResponse = HttpPost(url);
-                        Log.e("SAVING DATA ", "SAVING DATA " + updaterServiceResponse);
-
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -1573,14 +1405,11 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
         //; charset=utf-8
         // 2. build JSON object
         JSONObject jsonObject = buidJsonObject();
-        Log.e("jsonObject", "jsonObject: " + jsonObject);
         // 3. add JSON content to POST request body
         setPostRequestContent(conn, jsonObject);
         conn.connect();
         result = conn.getResponseMessage();
-        Log.e("Response Message", "Response Message: " + conn.getResponseMessage());
         // 5. return response message
-        Log.e("Response Code", "ResponseCode: " + conn.getResponseCode());
         if (conn.getResponseCode() != 200) {
             throw new RuntimeException("Failed : HTTP error code : " + conn.getResponseCode());
         }
@@ -1618,21 +1447,10 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("POST");
         conn.setRequestProperty("Content-Type", "application/json; charset=utf-8");
-        //  conn.setRequestProperty("Accept", "application/json");
-        //; charset=utf-8
-        // 2. build JSON object
         JSONObject jsonObject = buidJsonObjectTokenService();
-        //Log.e("jsonObject", "jsonObject: " + jsonObject);
-        // 3. add JSON content to POST request body
         setPostRequestContent(conn, jsonObject);
-        // 4. make POST request to the given URL
         conn.connect();
         result = conn.getResponseMessage();
-        Log.e("Response Message", "Response Message: " + result);
-        // 5. return response message
-        // Log.e("RequestMethod Code", "RequestMethod: " + conn.getRequestMethod());
-        // Log.e("ContentEncoding Code", "ContentEncoding: " + conn.getContentEncoding());
-        Log.e("Response Code", "ResponseCode: " + conn.getResponseCode());
         if (conn.getResponseCode() != 200) {
             throw new RuntimeException("Failed : HTTP error code : " + conn.getResponseCode());
         }
@@ -1651,15 +1469,24 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
         jsonObject.accumulate("Password","nsgadmin");
         return jsonObject;
     }
-
+    /*
+    public void InsertAllRouteData(String DBCSV_PATH){
+        StringBuilder query = new StringBuilder("INSERT INTO ");
+        query.append(RouteT.TABLE_NAME).append("(routeID,startNode,endNode,routeData) values (")
+                .append("'").append("RD1").append("',")
+                .append("'").append("55.067291 24.978782").append("',")
+                .append("'").append("55.067205 24.979878").append("',")
+                .append("'").append("{\"$id\":\"1\",\"Message\":\"Sucess\",\"Status\":\"Success\",\"TotalDistance\":0.00884315523,\"Route\":[{\"$id\":\"2\",\"EdgeNo\":\"102\",\"GeometryText\":\"Take Left at Shell Trading Middle East Private Limited\",\"Geometry\":{\"$id\":\"3\",\"type\":\"LineString\",\"coordinates\":[[55.06727997182,24.9787947412557],[55.067020892000073,24.978570495000042],[55.066790925000078,24.978370131000077],[55.066620030000081,24.978221328000075],[55.06650374700007,24.97812037500006],[55.066452143000049,24.978075252000053],[55.066388841000048,24.978020054000069],[55.066216137000083,24.977870199000051],[55.06598632500004,24.97767018400009],[55.065755946000081,24.977470103000087],[55.065526233000071,24.977270178000083],[55.065312867000046,24.977084458000036]]}},{\"$id\":\"4\",\"EdgeNo\":\"1334\",\"GeometryText\":\"Take Right at\",\"Geometry\":{\"$id\":\"5\",\"type\":\"LineString\",\"coordinates\":[[55.065312867000046,24.977084458000036],[55.065287629000068,24.977076221000061],[55.065261227000065,24.97707199000007],[55.065234420000081,24.97707188600009],[55.065207979000036,24.977075912000089],[55.065182665000066,24.97708395300009],[55.065159206000033,24.977095778000091],[55.065138276000084,24.977111045000072],[55.065138276000084,24.977111045000072],[55.065120166000042,24.977128114000038],[55.064756250000073,24.977475793000053],[55.064379641000073,24.977835331000051],[55.064249201000052,24.977960644000063]]}},{\"$id\":\"6\",\"EdgeNo\":\"383\",\"GeometryText\":\"Take Right at\",\"Geometry\":{\"$id\":\"7\",\"type\":\"LineString\",\"coordinates\":[[55.064249201000052,24.977960644000063],[55.064238539000087,24.977972603000069],[55.064230288000033,24.977986052000062],[55.064224693000085,24.978000592000058],[55.064221918000044,24.978015793000054],[55.064222048000033,24.978031201000078],[55.064222048000033,24.978031201000078],[55.064387059000069,24.978174369000044],[55.064439134000054,24.978219639000088]]}},{\"$id\":\"8\",\"EdgeNo\":\"405\",\"GeometryText\":\"Take Right at\",\"Geometry\":{\"$id\":\"9\",\"type\":\"LineString\",\"coordinates\":[[55.064439134000054,24.978219639000088],[55.064525820000085,24.978294996000045],[55.064525820000085,24.978294996000045],[55.064649532000033,24.978402540000047],[55.06498055600008,24.978690915000072]]}},{\"$id\":\"10\",\"EdgeNo\":\"413\",\"GeometryText\":\"Take Right at\",\"Geometry\":{\"$id\":\"11\",\"type\":\"LineString\",\"coordinates\":[[55.06498055600008,24.978690915000072],[55.065164137000068,24.978850842000043],[55.065338824000037,24.979002188000038],[55.065338824000037,24.979002188000038],[55.065422408000074,24.979074604000061],[55.065573362000066,24.979205705000084]]}},{\"$id\":\"12\",\"EdgeNo\":\"396\",\"GeometryText\":\"Take Right at\",\"Geometry\":{\"$id\":\"13\",\"type\":\"LineString\",\"coordinates\":[[55.065573362000066,24.979205705000084],[55.065666012000065,24.979286171000069],[55.065666012000065,24.979286171000069],[55.065681098000084,24.979299272000048],[55.065938324000058,24.979522600000053],[55.066002768000033,24.979578645000061]]}},{\"$id\":\"14\",\"EdgeNo\":\"423\",\"GeometryText\":\"Take Right at\",\"Geometry\":{\"$id\":\"15\",\"type\":\"LineString\",\"coordinates\":[[55.066002768000033,24.979578645000061],[55.066081442000041,24.979647065000051],[55.066081442000041,24.979647065000051],[55.066110416000072,24.979672262000065],[55.066245676000051,24.979789959000072]]}},{\"$id\":\"16\",\"EdgeNo\":\"440\",\"GeometryText\":\"Take Right at\",\"Geometry\":{\"$id\":\"17\",\"type\":\"LineString\",\"coordinates\":[[55.066245676000051,24.979789959000072],[55.06634370900008,24.979875263000054],[55.06634370900008,24.979875263000054],[55.066752725000072,24.980231166000067]]}},{\"$id\":\"18\",\"EdgeNo\":\"454\",\"GeometryText\":\"Take Left at\",\"Geometry\":{\"$id\":\"19\",\"type\":\"LineString\",\"coordinates\":[[55.066752725000072,24.980231166000067],[55.066772902000082,24.980240215000038],[55.066794299000037,24.98024651500009],[55.066816470000049,24.980249936000064],[55.066838951000079,24.980250405000049],[55.066861270000061,24.980247913000085]]}},{\"$id\":\"20\",\"EdgeNo\":\"443\",\"GeometryText\":\"-\",\"Geometry\":{\"$id\":\"21\",\"type\":\"LineString\",\"coordinates\":[[55.066861270000061,24.980247913000085],[55.0672260238388,24.9799000715094]]}}]}").append("'");
+        sqlHandler.executeQuery(query.toString());
+    }
+*/
     @RequiresApi(api = Build.VERSION_CODES.KITKAT)
     public void InsertAllRouteData(String DBCSV_PATH){
         File file = new File(DBCSV_PATH);
-        Log.e(" Route CSV File From ", " generateCsvFile Method ---" + file);
         CsvReader csvReader = new CsvReader();
         csvReader.setContainsHeader(true);
-        File outputFile = new File(file, "RouteSample.csv");
-        if(outputFile.exists()) {
+        Log.e("OUTPUT FILE","OUTPUT FILE"+file);
+        if(file.exists()) {
             try (CsvParser csvParser = csvReader.parse(file, StandardCharsets.UTF_8)) {
                 CsvRow row;
                 while ((row = csvParser.nextRow()) != null) {
@@ -1676,7 +1503,7 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
                             .append("'").append(startNode).append("',")
                             .append("'").append(endNode).append("',")
                             .append("'").append(routeData).append("')");
-                    Log.e("INSERT QUERY", "INSERT QUERY ------ " + query);
+
                     sqlHandler.executeQuery(query.toString());
                     sqlHandler.closeDataBaseConnection();
 
@@ -1684,55 +1511,41 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        }else{
-            Log.e("INSERT QUERY", "INSERT QUERY ------ " + "FILE DOESNOT EXISTS");
-        }
+       }else{
+
+       }
 
     }
+
+
     public void GetRouteFromDBPlotOnMap(String FeatureResponse){
         JSONObject jsonObject = null;
         try {
             if(FeatureResponse!=null){
-              //  String delQuery = "DELETE  FROM " + EdgeDataT.TABLE_NAME;
-             //   Log.e("DEL QUERY","DEL QUERY " + delQuery);
-             //   sqlHandler.executeQuery(delQuery.toString());
-                jsonObject = new JSONObject(FeatureResponse);
+               jsonObject = new JSONObject(FeatureResponse);
                 String ID = String.valueOf(jsonObject.get("$id"));
-               // MESSAGE = jsonObject.getString("Message");
                 String Status = jsonObject.getString("Status");
                 double TotalDistance = jsonObject.getDouble("TotalDistance");
-                double TotalDistanceInMTS= TotalDistance*1000;
+                TotalDistanceInMTS= TotalDistance*100000;
                 JSONArray jSonRoutes = new JSONArray(jsonObject.getString("Route"));
-                // Log.e("jSonRoutes", "jSonRoutes" + jSonRoutes);
                 PolylineOptions polylineOptions = new PolylineOptions();
                 Polyline polyline = null;
                 convertedPoints=new ArrayList<LatLng>();
                 for (int i = 0; i < jSonRoutes.length(); i++) {
                     points=new ArrayList();
-                    // Log.e("jSonRoutes", "jSonRoutes" + jSonRoutes.get(i));
-                    // List Routes=new ArrayList();
-                    // Routes.add(jSonRoutes.get(i));
                     JSONObject Routes = new JSONObject(jSonRoutes.get(i).toString());
                     String $id = Routes.getString("$id");
                     String EdgeNo = Routes.getString("EdgeNo");
                     String GeometryText = Routes.getString("GeometryText");
-                    // Log.e("GeometryText", "GeometryText" + GeometryText);
                     String Geometry = Routes.getString("Geometry");
-                    // Log.e("Geometry", "Geometry----" + Geometry);
                     JSONObject geometryObject = new JSONObject(Routes.getString("Geometry"));
                     String $id1 = geometryObject.getString("$id");
                     String type = geometryObject.getString("type");
-                    // Log.e("type", "type----" + type);
                     String coordinates = geometryObject.getString("coordinates");
-                    // Log.e("coordinates", "coordinates----" + coordinates);
                     JSONArray jSonLegs = new JSONArray(geometryObject.getString("coordinates"));
-                    // Log.e("jSonLegs", "jSonLegs----" + jSonLegs);
                     for (int j = 0; j < jSonLegs.length(); j++) {
-                        //   Log.e("JSON LEGS", "JSON CORDINATES" + jSonLegs.get(j));
                         points.add(jSonLegs.get(j));
-                        //    Log.e("JSON LEGS", " LATLNG RESULT------ " + points.size());
                     }
-                    // Log.e("JSON LEGS", " LATLNG RESULT------ " + points.size());
                     String  stPoint=String.valueOf(jSonLegs.get(0));
                     String  endPoint=String.valueOf(jSonLegs.get(jSonLegs.length()-1));
 
@@ -1752,12 +1565,11 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
 
                         double distance=showDistance(stVertex,endVertex);
                         String distanceInKM = String.valueOf(distance/1000);
-                            Log.e("Distance -----","Distance in KM-------- "+ distanceInKM);
                     StringBuilder query = new StringBuilder("INSERT INTO ");
-                    query.append(EdgeDataT.TABLE_NAME).append("(edgeNo,distanceInVertex,totaldistance,startPoint,allPoints,geometryText,endPoint) values (")
+                    query.append(EdgeDataT.TABLE_NAME).append("(edgeNo,distanceInVertex,startPoint,allPoints,geometryText,endPoint) values (")
                             .append("'").append(EdgeNo).append("',")
                             .append("'").append(distanceInKM).append("',")
-                            .append("'").append(String.valueOf(TotalDistanceInMTS)).append("',")
+                           // .append("'").append(String.valueOf(TotalDistanceInMTS)).append("',")
                             .append("'").append(jSonLegs.get(0)).append("',")
                             .append("'").append(points).append("',")
                             .append("'").append(GeometryText).append("',")
@@ -1765,22 +1577,14 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
                     sqlHandler.executeQuery(query.toString());
                     sqlHandler.closeDataBaseConnection();
                     for (int p = 0; p < points.size(); p++) {
-                        //    Log.e("JSON LEGS", "JSON POINTS LIST ---- " + points.get(p));
                         String listItem = points.get(p).toString();
                         listItem = listItem.replace("[", "");
                         listItem = listItem.replace("]", "");
-                        //   Log.e("JSON LEGS", "JSON POINTS LIST ---- " + listItem);
                         String[] subListItem = listItem.split(",");
-                        //  Log.e("JSON LEGS", "JSON POINTS LIST ---- " + subListItem.length);
-                        //  Log.e("JSON LEGS", "JSON POINTS LIST ---- " + subListItem[0]);
-                        //  Log.e("JSON LEGS", "JSON POINTS LIST ---- " + subListItem[1]);
                         Double y = Double.valueOf(subListItem[0]);
                         Double x = Double.valueOf(subListItem[1]);
                         StringBuilder sb=new StringBuilder();
-                        //  sb.append(x).append(",").append(y).append(":");
-                        //  LocationPerpedicularPoints.add(sb.toString());
                         LatLng latLng = new LatLng(x, y);
-                        //   Log.e("JSON LEGS", " LATLNG RESULT------ " + latLng);
                         convertedPoints.add(latLng);
                     }
                     Log.e("convertedPoints", " convertedPoints------ " +  convertedPoints.size());
@@ -1790,7 +1594,6 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
                             markerOptions.position(convertedPoints.get(k));
                             markerOptions.title("Position");
                         }
-                        // polyline.setGeodesic(true);
                     }
                 }
                 polylineOptions.addAll(convertedPoints);
@@ -1807,13 +1610,14 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
 
     private boolean checkPermission() {
         int result = ContextCompat.checkSelfPermission(getContext(), ACCESS_FINE_LOCATION);
-        int result1 = ContextCompat.checkSelfPermission(getContext(), STORAGE);
-        return true;//result == PackageManager.PERMISSION_GRANTED && result1 == PackageManager.PERMISSION_GRANTED;
+        int result1 = ContextCompat.checkSelfPermission(getContext(), READ_EXTERNAL_STORAGE);
+        //String resultAccepted == PackageManager.PERMISSION_GRANTED && result1 == PackageManager.PERMISSION_GRANTED;
+        return true;
     }
 
     private void requestPermission() {
 
-        ActivityCompat.requestPermissions(getActivity(), new String[]{ACCESS_FINE_LOCATION, STORAGE}, PERMISSION_REQUEST_CODE);
+        ActivityCompat.requestPermissions(getActivity(), new String[]{ACCESS_FINE_LOCATION, READ_EXTERNAL_STORAGE}, PERMISSION_REQUEST_CODE);
 
     }
 
@@ -1824,9 +1628,9 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
                 if (grantResults.length > 0) {
 
                     boolean locationAccepted = grantResults[0] == PackageManager.PERMISSION_GRANTED;
-                    boolean cameraAccepted = grantResults[1] == PackageManager.PERMISSION_GRANTED;
+                    boolean storageAccepted = grantResults[1] == PackageManager.PERMISSION_GRANTED;
 
-                    if (locationAccepted && cameraAccepted) {
+                    if (locationAccepted && storageAccepted) {
                         // Toast.makeText(this, "Permission Granted,.", Toast.LENGTH_LONG).show();
                     }else {
                         // Toast.makeText(this, "Permission Denied, You cannot access location data and camera.", Snackbar.LENGTH_LONG).show();
@@ -1839,7 +1643,7 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
                                         .setPositiveButton("OK", new DialogInterface.OnClickListener() {
                                             public void onClick(DialogInterface dialog, int id) {
                                                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                                                    requestPermissions(new String[]{ACCESS_FINE_LOCATION, STORAGE},
+                                                    requestPermissions(new String[]{ACCESS_FINE_LOCATION, READ_EXTERNAL_STORAGE},
                                                             PERMISSION_REQUEST_CODE);
                                                 }
                                             }
@@ -1959,34 +1763,21 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
                     String Status = jsonObject.getString("Status");
                     String TotalDistance = jsonObject.getString("TotalDistance");
                     JSONArray jSonRoutes = new JSONArray(jsonObject.getString("Route"));
-                    Log.e("jSonRoutes", "jSonRoutes" + jSonRoutes);
                     for (int i = 0; i < jSonRoutes.length(); i++) {
                         points = new ArrayList();
                         convertedPoints = new ArrayList<LatLng>();
-                        Log.e("jSonRoutes", "jSonRoutes" + jSonRoutes.get(i));
-                        // List Routes=new ArrayList();
-                        // Routes.add(jSonRoutes.get(i));
                         JSONObject Routes = new JSONObject(jSonRoutes.get(i).toString());
                         String $id = Routes.getString("$id");
                         String EdgeNo = Routes.getString("EdgeNo");
                         String GeometryText = Routes.getString("GeometryText");
-                        Log.e("GeometryText", "GeometryText" + GeometryText);
                         String Geometry = Routes.getString("Geometry");
-                        Log.e("Geometry", "Geometry----" + Geometry);
                         JSONObject geometryObject = new JSONObject(Routes.getString("Geometry"));
                         String $id1 = geometryObject.getString("$id");
                         String type = geometryObject.getString("type");
-                        Log.e("type", "type----" + type);
                         String coordinates = geometryObject.getString("coordinates");
-                        Log.e("coordinates", "coordinates----" + coordinates);
                         JSONArray jSonLegs = new JSONArray(geometryObject.getString("coordinates"));
-                        Log.e("jSonLegs", "jSonLegs----" + jSonLegs);
                         for (int j = 0; j < jSonLegs.length(); j++) {
-                            Log.e("JSON LEGS", "JSON CORDINATES" + jSonLegs.get(j));
-                            // Log.e("JSON LEGS","JSON CORDINATES  SIZE ----- "+ jSonLegs.length());
                             points.add(jSonLegs.get(j));
-                            Log.e("JSON LEGS", " LATLNG RESULT------ " + points.size());
-
                             StringBuilder query = new StringBuilder("INSERT INTO ");
                             query.append(GeometryT.TABLE_NAME).append("(ID,message,status,totaldistance,edgeNo,geometryType,geometry) values (")
                                     .append("'").append(ID).append("',")
@@ -2009,22 +1800,15 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
                         sqlHandler.executeQuery(query.toString());
                         sqlHandler.closeDataBaseConnection();
                         for (int p = 0; p < points.size(); p++) {
-                            Log.e("JSON LEGS", "JSON POINTS LIST ---- " + points.get(p));
+
                             String listItem = points.get(p).toString();
                             listItem = listItem.replace("[", "");
                             listItem = listItem.replace("]", "");
-                            Log.e("JSON LEGS", "JSON POINTS LIST ---- " + listItem);
                             String[] subListItem = listItem.split(",");
-                            Log.e("JSON LEGS", "JSON POINTS LIST ---- " + subListItem.length);
-                            Log.e("JSON LEGS", "JSON POINTS LIST ---- " + subListItem[0]);
-                            Log.e("JSON LEGS", "JSON POINTS LIST ---- " + subListItem[1]);
                             Double y = Double.valueOf(subListItem[0]);
                             Double x = Double.valueOf(subListItem[1]);
                             StringBuilder sb = new StringBuilder();
-                            //  sb.append(x).append(",").append(y).append(":");
-                            //  LocationPerpedicularPoints.add(sb.toString());
                             LatLng latLng = new LatLng(x, y);
-                            Log.e("JSON LEGS", " LATLNG RESULT------ " + latLng);
                             convertedPoints.add(latLng);
                             for (int k = 0; k < convertedPoints.size(); k++) {
                                 MarkerOptions markerOptions = new MarkerOptions();
@@ -2036,15 +1820,10 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
                                     polylineOptions.width(6);
                                     polylineOptions.addAll(convertedPoints);
                                     polylineOptions.color(Color.RED).width(8);
-                                    //final BitmapDescriptor icon = BitmapDescriptorFactory.fromResource(R.drawable.circle_red);
-                                    //  mMap.addMarker(new MarkerOptions().position(SourcePosition)).title("").icon(icon));
                                     mMap.addPolyline(polylineOptions);
                                     addMarkers();
                                 }
 
-                                // polyline.setClickable(true);
-                                //polyline.setTag(redLinesList.get(i).getSlno());
-                                //mMap.addMarker(markerOptions);
                             }
 
                         }
@@ -2074,7 +1853,7 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
                     EdgeDataT edgeK=EdgeContainsDataList.get(k);
                     StringBuilder sb=new StringBuilder();
                     sb.append("STPOINT :"+edgeK.getStartPoint()+"EndPt:"+edgeK.getEndPoint()+"Points:"+edgeK.getPositionMarkingPoint()+"Geometry TEXT:"+ edgeK.getGeometryText());
-                    Log.e("EDGE CONTAINS","EDGE CONTAINS"+sb.toString());
+
                     String pointDataText=edgeK.getPositionMarkingPoint();
                     String stPoint_data=pointDataText.replace("lat/lng: (","");
                     String stPoint_data1=stPoint_data.replace(")","");
@@ -2085,8 +1864,7 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
                     double distanceOfCurrentPosition=showDistance(st_Point_vertex_main,currentGpsPosition);
                     EdgeDistancesList.add(distanceOfCurrentPosition);
                     EdgeDistancesMap.put(String.valueOf(distanceOfCurrentPosition).trim(),String.valueOf(pointDataText));
-                  //  Collections.addAll(EdgeDistancesList);
-                   // Collections.sort(EdgeDistancesList);
+
                     Collections.sort(EdgeDistancesList);
                 }
 
@@ -2102,14 +1880,11 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
         String FirstShortestDistance = String.valueOf(EdgeDistancesList.get(0));
         boolean verify=EdgeDistancesMap.containsKey(FirstShortestDistance.trim());
         if(verify){
-            Log.e("shortestDistancePoint ", "shortestDistancePoint----- : " + "TRUE");
+
             Object Value =String.valueOf( EdgeDistancesMap.get(FirstShortestDistance));
             vfinalValue= String.valueOf(EdgeDistancesMap.get(FirstShortestDistance));
-            Log.e("shortestDistancePoint ", "shortestDistancePoint  VALUE----- : " + vfinalValue);
-
 
         } else{
-            Log.e("shortestDistancePoint ", "shortestDistancePoint----- : " + "FALSE");
             System.out.println("Key not matched with ID");
         }
         EdgesEndContaingData(currentGpsPosition,vfinalValue);
@@ -2124,17 +1899,13 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
         StringBuilder sb=new StringBuilder();
         for(int i=0;i<EdgeContainsDataList.size();i++){
              edgeCurrentPoint=EdgeContainsDataList.get(i);
-            Log.e("Psoition","Position"+position);
              position=edgeCurrentPoint.getPositionMarkingPoint();
-            Log.e("Psoition","Position"+position);
             if(position.equals(shortestDistancePoint)){
                 distanceInEdge=EdgeContainsDataList.get(i).getGeometryText();
                 stPoint=  EdgeContainsDataList.get(i).getStartPoint();
                 endPoint= EdgeContainsDataList.get(i).getEndPoint();
                 geometryTextimpValue=EdgeContainsDataList.get(i).getGeometryText();
-                Log.e("VertexCordinate ", "INDEX POSITION ----- : " + indexPosition);
             }else{
-                // Log.e("VertexCordinate ", "StrtPoint----- : " + "NOT MATCHED");
             }
         }
 
@@ -2151,14 +1922,9 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
         double end_point_lat= Double.parseDouble(end_point[1]);
         double end_point_lnag= Double.parseDouble(end_point[0]);
         LatLng end_Point_vertex=new LatLng(end_point_lat,end_point_lnag);
-
-        Log.e("GEOMETRY TEXT ", "GEOMETRY TEXT  @@@@@@@@@@@@@@@@@@@: " + st_Point_vertex);
-        Log.e("GEOMETRY TEXT ", "GEOMETRY TEXT  @@@@@@@@@@@@@@@@@@@: " + end_Point_vertex);
-        Log.e("GEOMETRY TEXT ", "GEOMETRY TEXT  @@@@@@@@@@@@@@@@@@@: " + geometryTextimpValue);
         double Distance_To_travelIn_Vertex=showDistance(currentGpsPosition,end_Point_vertex);
         String Distance_To_travelIn_Vertex_Convetred=String.format("%.0f", Distance_To_travelIn_Vertex);
 
-        Log.e("VertexCordinate ", " Distance in EDGE NEED TO  TRAVEL DISTANCE " + Distance_To_travelIn_Vertex_Convetred);
         String data= geometryTextimpValue +" " + Distance_To_travelIn_Vertex_Convetred +"Meters";
         //String data=" in "+ DitrectionDistance +" Meters "+ directionTextFinal;
         int speechStatus = textToSpeech.speak(data, TextToSpeech.QUEUE_FLUSH, null);
@@ -2192,6 +1958,31 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
         }, 1500);  // 1500 seconds
 
     }
+    public void caclulateETA(double TotalDistance,LatLng sourcePosition,LatLng currentGpsPosition,LatLng DestinationPosition){
+        Log.e("Total Distance","Total Distance"+ TotalDistance);
+        ETACalclator etaCalculator1=new ETACalclator();
+        double resultTotalETA=etaCalculator1.cal_time(TotalDistance, maxSpeed);
+        double resultTotalTimeConverted = DecimalUtils.round(resultTotalETA,0);
+        tv.setText("Total Time: "+ resultTotalETA +" SEC" );
+
+        double travelledDistance=showDistance(sourcePosition,currentGpsPosition);
+        String travelledDistanceInMTS=String.format("%.0f", travelledDistance);
+        ETACalclator etaCalculator=new ETACalclator();
+        double speedKMPH= mphTOkmph(vehicleSpeed);
+        double resultTravelledTime=etaCalculator.cal_time(travelledDistance, vehicleSpeed);
+        Log.e("Travelled Distance","Tavelled Distance"+ resultTravelledTime);
+        tv1.setText("Time  Traveled: "+ resultTravelledTime +" SEC ");
+
+
+
+
+       // tv2.setText("ETA : " + RemaininedTimeConverted +"SEC" );
+       // tv3.setText("ETA Crossed Alert: "+ etaCrossedFlag );
+
+
+
+
+    }
 
     public void getTextImplementation(final LatLng currentGpsPosition, LatLng DestinationPosition){
         String stPoint="",endPoint="",geometryTextimpValue="",distanceInEdge="";
@@ -2214,7 +2005,6 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
                             String AllPoints = points.replace("[", "");
                             AllPoints = AllPoints.replace("]", "");
                             String[] AllPointsArray = AllPoints.split(", ");
-                            Log.e("ALL POINTS", "ALL POINTS" + AllPointsArray.length);
                             for (int ap = 0; ap < AllPointsArray.length; ap++) {
 
                                 String data = String.valueOf(AllPointsArray[ap]);
@@ -2232,12 +2022,9 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
                             String FirstShortestDistance = String.valueOf(EdgeDistancesList.get(0));
                             boolean verify=EdgeDistancesMap.containsKey(FirstShortestDistance.trim());
                             if(verify){
-                               Log.e("shortestDistancePoint ", "shortestDistancePoint----- : " + "TRUE");
                                Object Value = EdgeDistancesMap.get(FirstShortestDistance);
                                key= String.valueOf(Value);
-                               Log.e("shortestDistancePoint ", "shortestDistancePoint----- : " + key);
                             } else{
-                                Log.e("shortestDistancePoint ", "shortestDistancePoint----- : " + "FALSE");
                                 System.out.println("Key not matched with ID");
                             }
                         }
@@ -2257,7 +2044,6 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
         for(int i=0;i<EdgeContainsDataList.size();i++){
             EdgeDataT edgeCurrentPoint=EdgeContainsDataList.get(i);
             String position=edgeCurrentPoint.getPositionMarkingPoint();
-            //  Log.e("VertexCordinate ", "StrtPoint----- : " + position);
             if(position.equals(shortestDistancePoint)){
                 distanceInEdge= edgeCurrentPoint.getDistanceInVertex();
                 stPoint=  edgeCurrentPoint.getStartPoint();
@@ -2285,21 +2071,12 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
         double end_point_lat= Double.parseDouble(end_point[1]);
         double end_point_lnag= Double.parseDouble(end_point[0]);
         LatLng end_Point_vertex=new LatLng(end_point_lat,end_point_lnag);
-        Log.e("GEOMETRY TEXT ", "GEOMETRY TEXT  @@@@@@@@@@@@@@@@@@@: " + geometryTextimpValue);
-
-        Log.e(" EDGE CONVERSION ", "Strat Point from API" + st_Point_vertex);
-        Log.e(" EDGE CONVERSION ", "End Point from API" + end_Point_vertex);
         double resultTotalDistance=showDistance(new LatLng(sourceLat,sourceLng),new LatLng(destLat,destLng));
-
-
-        Log.e("Total Distance ", "CurrentGPS POSITION in EDGE from API" + currentGpsPosition);
-        Log.e("Total Distance ", "Distance in EDGE from API" + resultTotalDistance);
 
 
 
         double Distance_To_travelIn_Vertex=showDistance(currentGpsPosition,end_Point_vertex);
         String Distance_To_travelIn_Vertex_Convetred=String.format("%.0f", Distance_To_travelIn_Vertex);
-        Log.e("VertexCordinate ", " Distance in EDGE NEED TO  TRAVEL DISTANCE " + Distance_To_travelIn_Vertex_Convetred);
 
         String data= geometryTextimpValue +" " + Distance_To_travelIn_Vertex_Convetred +"Meters";
         //String data=" in "+ DitrectionDistance +" Meters "+ directionTextFinal;
@@ -2307,7 +2084,6 @@ public class NSGIMainFragment extends Fragment implements View.OnClickListener, 
         if (speechStatus == TextToSpeech.ERROR) {
             Log.e("TTS", "Error in converting Text to Speech!");
         }
-
 
 
       //  double  DitrectionDistance_InEDGE= showDistance(st_Point_vertex,end_Point_vertex);

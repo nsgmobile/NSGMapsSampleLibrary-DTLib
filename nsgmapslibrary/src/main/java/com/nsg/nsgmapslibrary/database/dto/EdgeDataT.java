@@ -37,6 +37,7 @@ public class EdgeDataT {
         MAPPING.add(new DatabaseColumn("distanceInVertex", "setDistanceInVertex",false,false,true,"text"));
         MAPPING.add(new DatabaseColumn("geometryText", "setGeometryText",false,false,true,"text"));
         MAPPING.add(new DatabaseColumn("positionMarkingPoint", "setPositionMarkingPoint",false,false,true,"text"));
+        MAPPING.add(new DatabaseColumn("totaldistance", "setTotaldistance",false,false,true,"text"));
 
     }
     public EdgeDataT(){}
@@ -189,4 +190,5 @@ public class EdgeDataT {
     public void setPositionMarkingPoint(String positionMarkingPoint) {
         this.positionMarkingPoint = positionMarkingPoint;
     }
+
 }
