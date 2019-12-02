@@ -3,18 +3,12 @@ package com.nsg.mapssample;
 import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Color;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.Handler;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentActivity;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
 import android.util.Log;
 import android.view.animation.Animation;
 import android.view.animation.RotateAnimation;
@@ -23,22 +17,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.nsg.nsgmapslibrary.Classes.HomeFragment;
-import com.nsg.nsgmapslibrary.Classes.MainFragment;
-import com.nsg.nsgmapslibrary.unusedClasses.NSGGetRouteOnMap;
-
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.net.HttpURLConnection;
-import java.net.URL;
 
 public class HomeActivity extends Activity implements SensorEventListener {
    // private HomeFragment.FragmentToActivity listener ;

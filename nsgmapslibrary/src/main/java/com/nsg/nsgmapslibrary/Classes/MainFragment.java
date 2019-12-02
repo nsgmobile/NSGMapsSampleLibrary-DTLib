@@ -88,7 +88,6 @@ import com.nsg.nsgmapslibrary.database.db.SqlHandler;
 import com.nsg.nsgmapslibrary.database.dto.EdgeDataT;
 import com.nsg.nsgmapslibrary.database.dto.GeometryT;
 import com.nsg.nsgmapslibrary.database.dto.RouteT;
-import com.nsg.nsgmapslibrary.interfaces.ILoadTiles;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -128,7 +127,6 @@ import static java.lang.Math.sin;
 
 
 public class MainFragment extends Fragment implements View.OnClickListener, SensorEventListener {
-
     private static final int PERMISSION_REQUEST_CODE = 200;
     private static final int SENSOR_DELAY_NORMAL =5000;
     private ProgressDialog dialog;
@@ -144,7 +142,6 @@ public class MainFragment extends Fragment implements View.OnClickListener, Sens
     private GoogleMap mMap;
     private SqlHandler sqlHandler;
     GoogleMap.CancelableCallback callback;
-    ILoadTiles mCallback;
     private double userLocatedLat, userLocatedLongi;
     private List points;
     private List<LatLng> convertedPoints;
@@ -234,6 +231,7 @@ public class MainFragment extends Fragment implements View.OnClickListener, Sens
         String communicate(String comm);
     }
     private MainFragment.FragmentToActivity Callback;
+    public MainFragment(){ }
     @SuppressLint("ValidFragment")
     public MainFragment(String BASE_MAP_URL_FORMAT,String DBCSV_PATH,String jobId,String routeId, int mode, int radius ) {
         enteredMode = mode;
@@ -246,9 +244,7 @@ public class MainFragment extends Fragment implements View.OnClickListener, Sens
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setHasOptionsMenu(true);//Menu implementation
-        //Speech implemention
-
+        setHasOptionsMenu(true);
         textToSpeech = new TextToSpeech(getContext(), new TextToSpeech.OnInitListener() {
             @Override
             public void onInit(int status) {
@@ -283,11 +279,9 @@ public class MainFragment extends Fragment implements View.OnClickListener, Sens
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        //view from fragment
         mMarkerIcon = BitmapFactory.decodeResource(getResources(), R.drawable.gps_transperent_98);
         tileBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.water_image);
-        View rootView = inflater.inflate(R.layout.fragment_map, container,
-                false);
+        View rootView = inflater.inflate(R.layout.fragment_map, container, false);
         tv = (TextView) rootView.findViewById(R.id.tv);
         tv1 = (TextView) rootView.findViewById(R.id.tv1);
         tv2 = (TextView) rootView.findViewById(R.id.tv2);
@@ -297,21 +291,18 @@ public class MainFragment extends Fragment implements View.OnClickListener, Sens
         mMagnetometer = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
         checkPermission();
         requestPermission();
-        Log.e(" Route T "," DBCSV_PATH ****************** "+ DBCSV_PATH);
         String delQuery = "DELETE  FROM " + RouteT.TABLE_NAME;
-        Log.e("DEL QUERY","DEL QUERY " + delQuery);
         InsertAllRouteData(DBCSV_PATH);
         change_map_options = (ImageButton)rootView.findViewById(R.id.change_map_options);
         change_map_options.setOnClickListener(this);
-        //Initialise Map fragment
+
         SupportMapFragment mapFragment = (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.frg);  //use SuppoprtMapFragment for using in fragment instead of activity  MapFragment1 = activity   SupportMapFragment = fragment
         mapFragment.getMapAsync(new OnMapReadyCallback() {
             @Override
             public void onMapReady(GoogleMap googlemap) {
-                //initialise map
+
                 mMap = googlemap;
                 mMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(getContext(), R.raw.stle_map_json));
-
                 TileProvider tileProvider = new ExpandedMBTilesTileProvider(new File(BASE_MAP_URL_FORMAT.toString()), 256, 256);
                 TileOverlay tileOverlay = mMap.addTileOverlay(new TileOverlayOptions().tileProvider(tileProvider));
                 tileOverlay.setTransparency(0.5f - tileOverlay.getTransparency());
@@ -326,7 +317,6 @@ public class MainFragment extends Fragment implements View.OnClickListener, Sens
                         @RequiresApi(api = Build.VERSION_CODES.JELLY_BEAN)
                         @Override
                         public void run() {
-                            Log.e(" Route T "," RouteDataList ****************** "+ RouteDataList.size());
                             RouteT route = RouteDataList.get(0);
                             String routeData = route.getRouteData();
                             String sourceText=route.getStartNode();

@@ -1,32 +1,11 @@
 package com.nsg.mapssample;
 
-import android.animation.AnimatorInflater;
 import android.animation.AnimatorSet;
-import android.animation.ObjectAnimator;
-import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.Path;
-import android.graphics.Point;
-import android.os.Build;
 import android.os.Bundle;
-import android.support.annotation.RequiresApi;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
-import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
-import android.view.View;
-import android.view.animation.AlphaAnimation;
-import android.view.animation.Animation;
-import android.view.animation.AnimationSet;
-import android.view.animation.AnimationUtils;
-import android.view.animation.ScaleAnimation;
 import android.widget.ImageView;
 
-import com.nsg.nsgmapslibrary.Classes.HomeFragment;
 import com.nsg.nsgmapslibrary.database.dto.EdgeDataT;
 
 import java.util.ArrayList;
@@ -36,7 +15,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class SampleActivity extends Activity {
     AnimatorSet set;

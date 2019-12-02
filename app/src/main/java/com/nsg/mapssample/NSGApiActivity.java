@@ -1,9 +1,7 @@
 package com.nsg.mapssample;
 
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
-import android.support.annotation.RequiresApi;
 import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
@@ -11,10 +9,7 @@ import android.util.Log;
 import android.widget.TextView;
 
 import com.nsg.nsgmapslibrary.Classes.MainFragment;
-import com.nsg.nsgmapslibrary.Classes.MainMapFragment;
 import com.nsg.nsgmapslibrary.Classes.NSGLiveTrackingRoutingApiClass2;
-import com.nsg.nsgmapslibrary.Classes.NSGLiveTrackingRoutingApiClass3;
-import com.nsg.nsgmapslibrary.Classes.NSGRoutingDirectionApi;
 
 import java.io.File;
 

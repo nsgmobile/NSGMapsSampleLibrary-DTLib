@@ -68,7 +68,6 @@ import com.nsg.nsgmapslibrary.SupportClasses.Util;
 import com.nsg.nsgmapslibrary.database.db.SqlHandler;
 import com.nsg.nsgmapslibrary.database.dto.EdgeDataT;
 import com.nsg.nsgmapslibrary.database.dto.RouteT;
-import com.nsg.nsgmapslibrary.interfaces.ILoadTiles;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -103,7 +102,6 @@ public class NSGLiveTrackingRoutingApiClass2 extends Fragment implements GoogleM
     private GoogleMap mMap;
     private SqlHandler sqlHandler;
     GoogleMap.CancelableCallback callback;
-    ILoadTiles mCallback;
     private double userLocatedLat, userLocatedLongi;
     private List points;
     private List<LatLng> convertedPoints;
