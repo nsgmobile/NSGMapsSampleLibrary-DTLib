@@ -229,16 +229,11 @@ public class MainFragment extends Fragment implements View.OnClickListener, Sens
     float degree,lastUpdate;
     private String TotalDistance;
     private List<EdgeDataT> EdgeContainsDataList;
-
-
     StringBuilder time= new StringBuilder();
-
-
     public interface FragmentToActivity {
         String communicate(String comm);
     }
     private MainFragment.FragmentToActivity Callback;
-
     @SuppressLint("ValidFragment")
     public MainFragment(String BASE_MAP_URL_FORMAT,String DBCSV_PATH,String jobId,String routeId, int mode, int radius ) {
         enteredMode = mode;
@@ -293,8 +288,6 @@ public class MainFragment extends Fragment implements View.OnClickListener, Sens
         tileBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.water_image);
         View rootView = inflater.inflate(R.layout.fragment_map, container,
                 false);
-
-        //initialise view from fragment
         tv = (TextView) rootView.findViewById(R.id.tv);
         tv1 = (TextView) rootView.findViewById(R.id.tv1);
         tv2 = (TextView) rootView.findViewById(R.id.tv2);
@@ -302,14 +295,14 @@ public class MainFragment extends Fragment implements View.OnClickListener, Sens
         mSensorManager = (SensorManager)getContext().getSystemService(SENSOR_SERVICE);
         mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         mMagnetometer = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
-
+        checkPermission();
+        requestPermission();
         Log.e(" Route T "," DBCSV_PATH ****************** "+ DBCSV_PATH);
         String delQuery = "DELETE  FROM " + RouteT.TABLE_NAME;
         Log.e("DEL QUERY","DEL QUERY " + delQuery);
         InsertAllRouteData(DBCSV_PATH);
         change_map_options = (ImageButton)rootView.findViewById(R.id.change_map_options);
         change_map_options.setOnClickListener(this);
-
         //Initialise Map fragment
         SupportMapFragment mapFragment = (SupportMapFragment) getChildFragmentManager().findFragmentById(R.id.frg);  //use SuppoprtMapFragment for using in fragment instead of activity  MapFragment1 = activity   SupportMapFragment = fragment
         mapFragment.getMapAsync(new OnMapReadyCallback() {
@@ -346,88 +339,90 @@ public class MainFragment extends Fragment implements View.OnClickListener, Sens
                             destLng= Double.parseDouble(text1[0]);
                             SourceNode=new LatLng(sourceLat,sourceLng);
                             DestinationNode=new LatLng(destLat,destLng);
-                            //GetRouteFromDBPlotOnMap(routeData);
-                            GetRouteDetails(SourcePoint,DestinationPoint);
-
+                            if(routeData!=null) {
+                                GetRouteFromDBPlotOnMap(routeData);
+                               // GetRouteDetails(SourcePoint,DestinationPoint);
+                            }
+                            //
                             StringBuilder routeAlert=new StringBuilder();
                             routeAlert.append("src");
                             sendData(routeAlert.toString());
-                               // sendTokenRequest();
-                                getAllEdgesData();
-                                addMarkers();
-                                getValidRouteData();
-                                // dialog.dismiss();
-                                nearestPointValuesList=new ArrayList<LatLng>();
-                                nearestPointValuesList.add(new LatLng(sourceLat,sourceLng));
-                                OldNearestGpsList=new ArrayList<>();
-                                OldNearestGpsList.add(new LatLng(sourceLat,sourceLng));
-                                if(enteredMode==1 &&edgeDataList!=null && edgeDataList.size()>0){
-                                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-                                        // MoveWithGPSMARKER();
-                                        if (ActivityCompat.checkSelfPermission(getContext(), ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                                            // TODO: Consider calling
-                                            //    ActivityCompat#requestPermissions
-                                            return;
-                                        }
-                                        mMap.setMyLocationEnabled(true);
-                                        mMap.setBuildingsEnabled(true);
-                                        mMap.getUiSettings().setZoomControlsEnabled(true);
-                                        mMap.getUiSettings().setCompassEnabled(true);
-                                        mMap.getUiSettings().setMyLocationButtonEnabled(true);
-                                        mMap.getUiSettings().setMapToolbarEnabled(true);
-                                        mMap.getUiSettings().setZoomGesturesEnabled(true);
-                                        mMap.getUiSettings().setScrollGesturesEnabled(true);
-                                        mMap.getUiSettings().setTiltGesturesEnabled(true);
-                                        mMap.getUiSettings().setRotateGesturesEnabled(true);
-                                        mMap.getUiSettings().setMyLocationButtonEnabled(true);
-                                        Handler handler = new Handler();
-                                        handler.postDelayed(new Runnable() {
-                                            @Override
-                                           public void run() {
-                                                mMap.setOnMyLocationChangeListener(new GoogleMap.OnMyLocationChangeListener() {
-                                                    @Override
-                                                    public void onMyLocationChange(Location location) {
-                                                        if (mPositionMarker != null) {
-                                                            mPositionMarker.remove();
-
-                                                        }
-                                                        vehicleSpeed=location.getSpeed();
-                                                        getLatLngPoints();
-                                                       // LatLng currentGpsPosition = new LatLng(24.978305, 55.066644);
-                                                       // NavigationDirection(currentGpsPosition,DestinationPosition);
-                                                       LatLng currentGpsPosition = LatLngDataArray.get(locationFakeGpsListener);
-                                                       MoveWithGpsPointInBetWeenAllPoints(currentGpsPosition);
-                                                       locationFakeGpsListener = locationFakeGpsListener + 1;
-                                                    }
-                                                });
-                                           }
-                                        }, 0);
+                            // sendTokenRequest();
+                            getAllEdgesData();
+                            addMarkers();
+                            getValidRouteData();
+                            // dialog.dismiss();
+                            nearestPointValuesList=new ArrayList<LatLng>();
+                            nearestPointValuesList.add(new LatLng(sourceLat,sourceLng));
+                            OldNearestGpsList=new ArrayList<>();
+                            OldNearestGpsList.add(new LatLng(sourceLat,sourceLng));
+                            if(enteredMode==1 &&edgeDataList!=null && edgeDataList.size()>0){
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+                                    // MoveWithGPSMARKER();
+                                    if (ActivityCompat.checkSelfPermission(getContext(), ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                                        // TODO: Consider calling
+                                        //    ActivityCompat#requestPermissions
+                                        return;
                                     }
-                                }else if(enteredMode==2){
-                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-                                        if (ActivityCompat.checkSelfPermission(getContext(), ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                                            // TODO: Consider calling
-                                            //    ActivityCompat#requestPermissions
-                                            return;
-                                        }
-                                        mMap.setMyLocationEnabled(true);
-                                        mMap.setBuildingsEnabled(true);
-                                        mMap.getUiSettings().setZoomControlsEnabled(true);
-                                        mMap.getUiSettings().setCompassEnabled(true);
-                                        mMap.getUiSettings().setMyLocationButtonEnabled(true);
-                                        mMap.getUiSettings().setMapToolbarEnabled(true);
-                                        mMap.getUiSettings().setZoomGesturesEnabled(true);
-                                        mMap.getUiSettings().setScrollGesturesEnabled(true);
-                                        mMap.getUiSettings().setTiltGesturesEnabled(true);
-                                        mMap.getUiSettings().setRotateGesturesEnabled(true);
-                                        mMap.getUiSettings().setMyLocationButtonEnabled(true);
-                                        mMap.setOnMyLocationChangeListener(new GoogleMap.OnMyLocationChangeListener() {
-                                            @Override
-                                            public void onMyLocationChange(Location location) {
-                                                if (mPositionMarker != null) {
-                                                    mPositionMarker.remove();
+                                    mMap.setMyLocationEnabled(true);
+                                    mMap.setBuildingsEnabled(true);
+                                    mMap.getUiSettings().setZoomControlsEnabled(true);
+                                    mMap.getUiSettings().setCompassEnabled(true);
+                                    mMap.getUiSettings().setMyLocationButtonEnabled(true);
+                                    mMap.getUiSettings().setMapToolbarEnabled(true);
+                                    mMap.getUiSettings().setZoomGesturesEnabled(true);
+                                    mMap.getUiSettings().setScrollGesturesEnabled(true);
+                                    mMap.getUiSettings().setTiltGesturesEnabled(true);
+                                    mMap.getUiSettings().setRotateGesturesEnabled(true);
+                                    mMap.getUiSettings().setMyLocationButtonEnabled(true);
+                                    Handler handler = new Handler();
+                                    handler.postDelayed(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            mMap.setOnMyLocationChangeListener(new GoogleMap.OnMyLocationChangeListener() {
+                                                @Override
+                                                public void onMyLocationChange(Location location) {
+                                                    if (mPositionMarker != null) {
+                                                        mPositionMarker.remove();
+
+                                                    }
+                                                    vehicleSpeed=location.getSpeed();
+                                                    getLatLngPoints();
+                                                    // LatLng currentGpsPosition = new LatLng(24.978305, 55.066644);
+                                                    // NavigationDirection(currentGpsPosition,DestinationPosition);
+                                                    LatLng currentGpsPosition = LatLngDataArray.get(locationFakeGpsListener);
+                                                    MoveWithGpsPointInBetWeenAllPoints(currentGpsPosition);
+                                                    locationFakeGpsListener = locationFakeGpsListener + 1;
                                                 }
-                                                LatLng currentGpsPosition=new LatLng(location.getLatitude(),location.getLongitude());
+                                            });
+                                        }
+                                    }, 0);
+                                }
+                            }else if(enteredMode==2){
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+                                    if (ActivityCompat.checkSelfPermission(getContext(), ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                                        // TODO: Consider calling
+                                        //    ActivityCompat#requestPermissions
+                                        return;
+                                    }
+                                    mMap.setMyLocationEnabled(true);
+                                    mMap.setBuildingsEnabled(true);
+                                    mMap.getUiSettings().setZoomControlsEnabled(true);
+                                    mMap.getUiSettings().setCompassEnabled(true);
+                                    mMap.getUiSettings().setMyLocationButtonEnabled(true);
+                                    mMap.getUiSettings().setMapToolbarEnabled(true);
+                                    mMap.getUiSettings().setZoomGesturesEnabled(true);
+                                    mMap.getUiSettings().setScrollGesturesEnabled(true);
+                                    mMap.getUiSettings().setTiltGesturesEnabled(true);
+                                    mMap.getUiSettings().setRotateGesturesEnabled(true);
+                                    mMap.getUiSettings().setMyLocationButtonEnabled(true);
+                                    mMap.setOnMyLocationChangeListener(new GoogleMap.OnMyLocationChangeListener() {
+                                        @Override
+                                        public void onMyLocationChange(Location location) {
+                                            if (mPositionMarker != null) {
+                                                mPositionMarker.remove();
+                                            }
+                                            LatLng currentGpsPosition=new LatLng(location.getLatitude(),location.getLongitude());
                                                 /*
                                                LatLng currentGpsPosition=new LatLng(location.getLatitude(),location.getLongitude());
                                                 mPositionMarker = mMap.addMarker(new MarkerOptions()
@@ -503,31 +498,31 @@ public class MainFragment extends Fragment implements View.OnClickListener, Sens
                                                 // save location as last for next update
                                                 lastLocation = location;
                                                 */
-                                                Projection p = mMap.getProjection();
-                                                Point  bottomRightPoint = p.toScreenLocation(p.getVisibleRegion().nearRight);
-                                                Point center = new Point(bottomRightPoint.x/2,bottomRightPoint.y/2);
-                                                Point offset = new Point(center.x, (center.y + 350));
-                                                LatLng centerLoc = p.fromScreenLocation(center);
-                                                LatLng offsetNewLoc = p.fromScreenLocation(offset);
-                                                double offsetDistance = SphericalUtil.computeDistanceBetween(centerLoc, offsetNewLoc);
-                                                LatLng shadowTgt = SphericalUtil.computeOffset(currentGpsPosition,offsetDistance,location.getBearing());
+                                            Projection p = mMap.getProjection();
+                                            Point  bottomRightPoint = p.toScreenLocation(p.getVisibleRegion().nearRight);
+                                            Point center = new Point(bottomRightPoint.x/2,bottomRightPoint.y/2);
+                                            Point offset = new Point(center.x, (center.y + 350));
+                                            LatLng centerLoc = p.fromScreenLocation(center);
+                                            LatLng offsetNewLoc = p.fromScreenLocation(offset);
+                                            double offsetDistance = SphericalUtil.computeDistanceBetween(centerLoc, offsetNewLoc);
+                                            LatLng shadowTgt = SphericalUtil.computeOffset(currentGpsPosition,offsetDistance,location.getBearing());
 
-                                                CameraPosition currentPlace = new CameraPosition.Builder()
-                                                        .target(shadowTgt)
-                                                        .bearing(location.getBearing()).tilt(65.5f).zoom(20)
-                                                        .build();
-                                                mMap.animateCamera(CameraUpdateFactory.newCameraPosition(currentPlace), 5000, null);
-                                            }
-                                        });
-                                    }
-
+                                            CameraPosition currentPlace = new CameraPosition.Builder()
+                                                    .target(shadowTgt)
+                                                    .bearing(location.getBearing()).tilt(65.5f).zoom(20)
+                                                    .build();
+                                            mMap.animateCamera(CameraUpdateFactory.newCameraPosition(currentPlace), 5000, null);
+                                        }
+                                    });
                                 }
-                                dialog.dismiss();
+
+                            }
+                            dialog.dismiss();
 
                         }
                     }, 30);
                 }else{
-
+                    Log.e("SendData","SendData ------- "+ "internet does not exist");
                 }
             }
         });
@@ -708,9 +703,7 @@ public class MainFragment extends Fragment implements View.OnClickListener, Sens
                 LatLng PositionMarkingPoint = EdgeWithoutDuplicates.get(epList);
                 Log.e("currentGpsPosition ", "PositionMarking POINT----------" + PositionMarkingPoint);
                 Log.e("currentGpsPosition ", "currentGpsPosition POINT----------" + currentGpsPosition);
-
                 double distance = distFrom(PositionMarkingPoint.latitude,PositionMarkingPoint.longitude,currentGpsPosition.longitude,currentGpsPosition.latitude);
-
                 hash_map.put(String.valueOf(distance), String.valueOf(EdgeWithoutDuplicates.get(epList)));
                 // distanceValuesList.add("A"+" ");
                 //  Log.e("Sorted ArrayList ", "in Ascending order : " + distanceValuesList.get(epList));
@@ -720,7 +713,6 @@ public class MainFragment extends Fragment implements View.OnClickListener, Sens
             for(int i=0;i<distancesList.size();i++) {
                 Log.e("Sorted ArrayList ", "in Ascending order : " + distancesList.get(i));
             }
-
             String FirstShortestDistance = String.valueOf(distancesList.get(0));
             String SecondShortestDistance = String.valueOf(distancesList.get(1));
             boolean answerFirst= hash_map.containsKey(FirstShortestDistance);
@@ -826,8 +818,8 @@ public class MainFragment extends Fragment implements View.OnClickListener, Sens
         }else{
             animateCarMove(mPositionMarker, OldGps, nearestPositionPoint, 10000,currentGpsPosition);
         }
-       // getTextImplementation(currentGpsPosition,DestinationNode);
         NavigationDirection(currentGpsPosition,DestinationNode);
+        AlertDestination(currentGpsPosition);
 
 
 /*
@@ -1688,29 +1680,34 @@ public class MainFragment extends Fragment implements View.OnClickListener, Sens
         Log.e(" Route CSV File From ", " generateCsvFile Method ---" + file);
         CsvReader csvReader = new CsvReader();
         csvReader.setContainsHeader(true);
-        try (CsvParser csvParser = csvReader.parse(file, StandardCharsets.UTF_8)) {
-            CsvRow row;
-            while ((row = csvParser.nextRow()) != null) {
-                System.out.println("Read line: " + row);
-                String ID=row.getField("ID");
-                String RouteID=row.getField("RouteID");
-                String startNode=row.getField("StartPoint");
-                String endNode=row.getField("EndPoint");
-                String routeData=row.getField("Route");
+        File outputFile = new File(file, "RouteSample.csv");
+        if(outputFile.exists()) {
+            try (CsvParser csvParser = csvReader.parse(file, StandardCharsets.UTF_8)) {
+                CsvRow row;
+                while ((row = csvParser.nextRow()) != null) {
+                    System.out.println("Read line: " + row);
+                    String ID = row.getField("ID");
+                    String RouteID = row.getField("RouteID");
+                    String startNode = row.getField("StartPoint");
+                    String endNode = row.getField("EndPoint");
+                    String routeData = row.getField("Route");
 
-                StringBuilder query = new StringBuilder("INSERT INTO ");
-                query.append(RouteT.TABLE_NAME).append("(routeID,startNode,endNode,routeData) values (")
-                        .append("'").append(RouteID).append("',")
-                        .append("'").append(startNode).append("',")
-                        .append("'").append(endNode).append("',")
-                        .append("'").append(routeData).append("')");
-                Log.e("INSERT QUERY","INSERT QUERY ------ "+query);
-                sqlHandler.executeQuery(query.toString());
-                sqlHandler.closeDataBaseConnection();
+                    StringBuilder query = new StringBuilder("INSERT INTO ");
+                    query.append(RouteT.TABLE_NAME).append("(routeID,startNode,endNode,routeData) values (")
+                            .append("'").append(RouteID).append("',")
+                            .append("'").append(startNode).append("',")
+                            .append("'").append(endNode).append("',")
+                            .append("'").append(routeData).append("')");
+                    Log.e("INSERT QUERY", "INSERT QUERY ------ " + query);
+                    sqlHandler.executeQuery(query.toString());
+                    sqlHandler.closeDataBaseConnection();
 
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        } catch (IOException e) {
-            e.printStackTrace();
+        }else{
+            Log.e("INSERT QUERY", "INSERT QUERY ------ " + "FILE DOESNOT EXISTS");
         }
 
     }
@@ -1718,9 +1715,9 @@ public class MainFragment extends Fragment implements View.OnClickListener, Sens
         JSONObject jsonObject = null;
         try {
             if(FeatureResponse!=null){
-                String delQuery = "DELETE  FROM " + EdgeDataT.TABLE_NAME;
-                Log.e("DEL QUERY","DEL QUERY " + delQuery);
-                sqlHandler.executeQuery(delQuery.toString());
+              //  String delQuery = "DELETE  FROM " + EdgeDataT.TABLE_NAME;
+             //   Log.e("DEL QUERY","DEL QUERY " + delQuery);
+             //   sqlHandler.executeQuery(delQuery.toString());
                 jsonObject = new JSONObject(FeatureResponse);
                 String ID = String.valueOf(jsonObject.get("$id"));
                // MESSAGE = jsonObject.getString("Message");
@@ -2085,12 +2082,12 @@ public class MainFragment extends Fragment implements View.OnClickListener, Sens
             }
         }
     }
-    public String NavigationDirection(LatLng currentGpsPosition, LatLng DestinationPosition) {
-        String shortestDistancePoint = "";
-        /*Handler handler = new Handler();
-        handler.postDelayed(new Runnable() {
-            @Override
-            public void run() {*/
+    public String NavigationDirection(final LatLng currentGpsPosition, LatLng DestinationPosition) {
+        final String shortestDistancePoint = "";
+       // Handler handler = new Handler();
+       // handler.postDelayed(new Runnable() {
+        //    @Override
+        //    public void run() {
                 ArrayList<Double> EdgeDistancesList=new ArrayList<Double>();
                 HashMap EdgeDistancesMap=new HashMap<String,String>();
                 String stPoint = "", endPoint = "", geometryTextimpValue = "", distanceInEdge = "";
@@ -2117,16 +2114,11 @@ public class MainFragment extends Fragment implements View.OnClickListener, Sens
 
                      GetSortetPoint(EdgeDistancesMap,EdgeDistancesList, currentGpsPosition );
 
-            /*}
-        }, 10000);*/
+        //    }
+       // }, 10000);
         return shortestDistancePoint;
 
     }
-
-
-
-
-
     public String  GetSortetPoint(HashMap EdgeDistancesMap, ArrayList<Double>  EdgeDistancesList, LatLng currentGpsPosition ){
         String vfinalValue = "";
         String FirstShortestDistance = String.valueOf(EdgeDistancesList.get(0));
@@ -2146,10 +2138,6 @@ public class MainFragment extends Fragment implements View.OnClickListener, Sens
 
         return vfinalValue;
     }
-
-
-
-
     public void EdgesEndContaingData(LatLng currentGpsPosition,String shortestDistancePoint){
         String stPoint = "", endPoint = "", geometryTextimpValue = "", distanceInEdge = "";
         String position="";
@@ -2218,11 +2206,14 @@ public class MainFragment extends Fragment implements View.OnClickListener, Sens
         toast.setGravity(Gravity.TOP,0,150);
         toast.setView(layout);
         toast.show();
+        Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            public void run() {
+                dialog.dismiss();
+            }
+        }, 1500);  // 1500 seconds
 
     }
-
-
-
 
     public void getTextImplementation(final LatLng currentGpsPosition, LatLng DestinationPosition){
         String stPoint="",endPoint="",geometryTextimpValue="",distanceInEdge="";
